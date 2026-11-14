@@ -10,9 +10,9 @@
 
 ### 1.1 What this project is
 
-`CRT-Trinity` is a **highly customizable Sony Trinitron-inspired CRT post-processing ReShade FX shader for DuckStation**, distributed as a single `.fx` file. It builds on Mattias Gustavsson's **NewPixie CRT**. The original NewPixie shader was adapted to Slang by **hunterk**. **Albatross** later published the `CRT-NewPixie_Albatross` ReShade modification and described converting the vanilla code from Slang to HLSL while adding configurable variants. DuckStation also distributes its own `CRT-NewPixie.fx`; the available source header and history reviewed for this project do not unambiguously identify the author of that file's original ReShade FX conversion. These attributions describe upstream lineage, not authorship of CRT-Trinity's own implementation.
+`CRT-Trinity` is a **highly user-configurable Sony Trinitron-inspired CRT post-processing ReShade FX shader for DuckStation**, distributed as a single `.fx` file. It builds on Mattias Gustavsson's **NewPixie CRT**. The original NewPixie shader was adapted to Slang by **hunterk**. **Albatross** later published the `CRT-NewPixie_Albatross` ReShade modification and described converting the vanilla code from Slang to HLSL while adding configurable variants. DuckStation also distributes its own `CRT-NewPixie.fx`; the available source header and history reviewed for this project do not unambiguously identify the author of that file's original ReShade FX conversion. These attributions describe upstream lineage, not authorship of CRT-Trinity's own implementation.
 
-The **Sony Trinitron aperture-grille CRT family** is the shader's foundational hardware and visual reference, with a Japanese P22-inspired character as the default. This influence applies to the complete rendering approach—not merely the name of its default colour profile. Source reconstruction, phosphor structure, beam and scanline behaviour, temporal effects, grain/noise, ghosting, halation, bloom, geometry and the other image-finishing stages are all selected and tuned as parts of one cohesive, mild Trinitron-oriented presentation.
+The **Sony Trinitron aperture-grille CRT family** is the shader's foundational hardware and visual reference, with a Japanese P22-inspired character as the default. This influence applies to the complete rendering approach—not merely the name of its default color profile. Source reconstruction, phosphor structure, beam and scanline behaviour, temporal effects, grain/noise, ghosting, halation, bloom, geometry and the other image-finishing stages are all selected and tuned as parts of one cohesive, mild Trinitron-oriented presentation.
 
 **Project authorship and direction:** `CRT-Trinity` is created and directed by **bone-machine**. The project's visual goals, design choices, feature priorities, preferred defaults, testing feedback and final acceptance decisions belong to the project author. AI assistance has been used as a development tool for research, shader implementation, mathematical analysis, technical review and documentation. The `project_author` source field identifies the project author; it is not the sole acknowledgement of authorship.
 
@@ -24,12 +24,12 @@ The main visual references used by the author are:
 
 The **current default preset** is deliberately mild and approachable rather than a complete electrical, optical, or analog-video CRT simulation. That describes the present configuration; it is not a restriction on what future users may ask the shader to become. The current look is primarily produced by combining:
 
-- selectable display colour profiles;
+- selectable display color profiles;
 - selectable phosphor-mask patterns;
 - scanlines / beam-shaped vertical modulation;
 - modest pixel and source-pixel smoothing;
 - optional horizontal beam-spot filtering;
-- subtle colour fringing;
+- subtle color fringing;
 - vignette;
 - ghosting;
 - post-phosphor optical halation;
@@ -41,7 +41,7 @@ The **current default preset** is deliberately mild and approachable rather than
 
 ### 1.2 Sony Trinitron design reference and project-wide design philosophy
 
-The design reference for the shader's overall rendering approach is the **Sony Trinitron aperture-grille CRT family**, particularly selected characteristics of its construction and operating behaviour, with a Japanese P22-inspired default. This is the foundation of the shader's visual design, not a claim that it reproduces a particular Trinitron television or physically simulates its complete operation. The intended reference is a family-level Trinitron presentation informed especially by the RGB-stripe aperture-grille structure and the preferred Japanese P22-inspired colour character, not one exact model, chassis, tube revision or factory calibration.
+The design reference for the shader's overall rendering approach is the **Sony Trinitron aperture-grille CRT family**, particularly selected characteristics of its construction and operating behaviour, with a Japanese P22-inspired default. This is the foundation of the shader's visual design, not a claim that it reproduces a particular Trinitron television or physically simulates its complete operation. The intended reference is a family-level Trinitron presentation informed especially by the RGB-stripe aperture-grille structure and the preferred Japanese P22-inspired color character, not one exact model, chassis, tube revision or factory calibration.
 
 The project's research and design decisions consider the available technical and historical information about how Trinitron displays are constructed and behave, including:
 
@@ -50,19 +50,19 @@ The project's research and design decisions consider the available technical and
 - beam current, spot width and the way a beam profile can change with channel drive;
 - raster-line formation, scanline spacing, beam overlap and the visible relationship between neighbouring lines;
 - phosphor excitation, emitted-light distribution, persistence and the optical appearance of bright areas;
-- the display's colour primaries, white-point character, contrast and overall image presentation.
+- the display's color primaries, white-point character, contrast and overall image presentation.
 
-These subjects form the **design reference and interpretation framework**. The shader only implements screen-space effects that can be represented in its post-processing pipeline. For example, it uses aperture-grille coverage, damping-wire attenuation, current-responsive spot/beam approximations, scanline phase behaviour, display-colour transforms and simplified temporal/optical effects. It does **not** physically simulate the cathodes, electron trajectories, electron-gun geometry, deflection yoke, high-voltage circuitry, vacuum-tube operation or phosphor chemistry. Those mechanisms inform the design but are not solved as physical/electrical simulations.
+These subjects form the **design reference and interpretation framework**. The shader only implements screen-space effects that can be represented in its post-processing pipeline. For example, it uses aperture-grille coverage, damping-wire attenuation, current-responsive spot/beam approximations, scanline phase behaviour, display-color transforms and simplified temporal/optical effects. It does **not** physically simulate the cathodes, electron trajectories, electron-gun geometry, deflection yoke, high-voltage circuitry, vacuum-tube operation or phosphor chemistry. Those mechanisms inform the design but are not solved as physical/electrical simulations.
 
-This Trinitron reference applies to the **whole rendering treatment**, not only to the mask or colour profile. Source reconstruction and filtering are tuned to prepare the image for the intended Trinitron-like raster; the horizontal spot and vertical beam models describe the chosen beam presentation; scanlines and field-phase behaviour provide the raster/temporal character; grain/noise, flicker, ghosting, halation, bloom, vignette and optional curvature are selected and balanced to support the same overall screen impression. Some of these finishing effects are deliberate aesthetic interpretations rather than literal artifacts that every Trinitron naturally exhibits. They should not be described as measured or inevitable properties of the hardware.
+This Trinitron reference applies to the **whole rendering treatment**, not only to the mask or color profile. Source reconstruction and filtering are tuned to prepare the image for the intended Trinitron-like raster; the horizontal spot and vertical beam models describe the chosen beam presentation; scanlines and field-phase behaviour provide the raster/temporal character; grain/noise, flicker, ghosting, halation, bloom, vignette and optional curvature are selected and balanced to support the same overall screen impression. Some of these finishing effects are deliberate aesthetic interpretations rather than literal artifacts that every Trinitron naturally exhibits. They should not be described as measured or inevitable properties of the hardware.
 
-The other entries in **Display Color Profile** are optional user-customization choices. They provide alternative colour-primary/white-point interpretations and, where the profile mapping specifies it, a convenient automatic mask pairing. They do **not** switch the shader into a separate complete Toshiba, BVM or KX-14CP1 hardware simulation, and they do not replace the underlying Trinitron-oriented image-formation and effects model. The Japanese Cool Sony Trinitron profile remains the default and central reference; the additional profiles make the shader more flexible for users whose preferred colour appearance differs.
+The other entries in **Display Color Profile** are optional user-customization choices. They provide alternative color-primary/white-point interpretations and, where the profile mapping specifies it, a convenient automatic mask pairing. They do **not** switch the shader into a separate complete Toshiba, BVM or KX-14CP1 hardware simulation, and they do not replace the underlying Trinitron-oriented image-formation and effects model. The Japanese Cool Sony Trinitron profile remains the default and central reference; the additional profiles make the shader more flexible for users whose preferred color appearance differs.
 
 ### 1.3 Authoring context and current default aesthetic
 
 The shader was developed with **AI-assisted research, implementation, mathematical analysis and iterative technical review** under the project direction of `bone-machine`. The saved defaults are the author’s preferred visual settings, selected by eye rather than by instrumented calibration. They are not measurements or factory calibrations of a particular television.
 
-The out-of-box configuration is a **mild, flat Sony Trinitron-inspired treatment**. Its default character is a **cool, blue-ish Japanese P22-inspired look**, with Flat geometry and the profile-selected aperture-grille mask. Other selectable profiles provide colour and mask-pairing alternatives, not independent complete CRT models. For ordinary use, the author recommends starting with the defaults and changing only familiar high-level settings such as the display profile, scanline visibility/strength, smoothing, grain, bloom or halation. Detailed beam, mask, reconstruction and geometry controls are intended for users who understand their interactions; advanced users may change them freely.
+The out-of-box configuration is a **mild, flat Sony Trinitron-inspired treatment**. Its default character is a **cool, blue-ish Japanese P22-inspired look**, with Flat geometry and the profile-selected aperture-grille mask. Other selectable profiles provide color and mask-pairing alternatives, not independent complete CRT models. For ordinary use, the author recommends starting with the defaults and changing only familiar high-level settings such as the display profile, scanline visibility/strength, smoothing, grain, bloom or halation. Detailed beam, mask, reconstruction and geometry controls are intended for users who understand their interactions; advanced users may change them freely.
 
 This describes the current design target and preset, not a requirement that future work must never change. The shader is editable, and a user may request a different visual target or a more detailed signal/display model. Follow the requested direction while clearly distinguishing a Trinitron-inspired post-process from a physically complete hardware simulation.
 
@@ -71,7 +71,7 @@ This describes the current design target and preset, not a requirement that futu
 Do not describe the current shader as a complete or physically exact CRT emulator. The current source does not implement a complete chain for:
 
 - analog RGB, composite, S-Video, component, RF, NTSC, or PAL encoding/decoding;
-- chroma subcarrier, dot crawl, chroma crawl, composite cross-colour, or full analog bandwidth behaviour;
+- chroma subcarrier, dot crawl, chroma crawl, composite cross-color, or full analog bandwidth behaviour;
 - full electron-gun and deflection-yoke simulation;
 - true time-domain phosphor chemistry and independently measured phosphor decay curves;
 - real CRT convergence, dynamic focus, astigmatism, purity errors, or measured spot shapes;
@@ -83,7 +83,7 @@ Some subsystems are informed by physical principles or use real mathematical con
 
 ### 1.5 Core Rendering Systems
 
-Use **Core Rendering Systems** to describe the shader's major processing components. Reserve **technique** for the formal ReShade FX `technique` construct (the declared `technique CRT_Trinity` and its ordered render passes). For variations within a system, use **profile**, **model** or **method** as appropriate—for example, a beam profile, a vertical beam model, or a source-reconstruction method. The main systems are source accumulation/history, source-image reconstruction, beam and scanline formation, phosphor-mask transmission, display-colour transformation, ghosting/halation/bloom, grain/noise, and optional faceplate projection.
+Use **Core Rendering Systems** to describe the shader's major processing components. Reserve **technique** for the formal ReShade FX `technique` construct (the declared `technique CRT_Trinity` and its ordered render passes). For variations within a system, use **profile**, **model** or **method** as appropriate—for example, a beam profile, a vertical beam model, or a source-reconstruction method. The main systems are source accumulation/history, source-image reconstruction, beam and scanline formation, phosphor-mask transmission, display-color transformation, ghosting/halation/bloom, grain/noise, and optional faceplate projection.
 
 ---
 
@@ -94,7 +94,7 @@ This is the technical handoff for the current CRT-Trinity implementation. The ac
 1. **Inspect the current `.fx` before editing.** Do not rely on stale copies, earlier conversation summaries, or remembered line numbers. Keep the deliverable as one DuckStation-oriented `.fx` file unless the user explicitly requests another architecture.
 2. **Respect project authorship and visual direction.** `bone-machine` is the project author and creative director. The whole pipeline is Sony Trinitron aperture-grille inspired, with a Japanese P22-inspired default, but the saved appearance is also the author's personal aesthetic preference. Physical plausibility is guidance, not a reason to override an explicitly preferred look.
 3. **Do not describe the shader as a complete CRT simulation.** It uses screen-space approximations. Grain, ghosting, bloom, flicker, interference and other finishing choices are selected partly because they look good; they are not claims about inevitable behaviour of every Trinitron.
-4. **Preserve the current display-profile semantics.** Sony and Neutral profiles default to Aperture Grille; Toshiba AF profiles default to Slot Mask. Explicit mask selection changes only the mask, not the colour profile. `Neutral — Standard` bypasses only `apply_display_color_profile()`; the rest of the shader remains active.
+4. **Preserve the current display-profile semantics.** Sony and Neutral profiles default to Aperture Grille; Toshiba AF profiles default to Slot Mask. Explicit mask selection changes only the mask, not the color profile. `Neutral — Standard` bypasses only `apply_display_color_profile()`; the rest of the shader remains active.
 5. **Preserve the source-reconstruction defaults unless asked otherwise.** `Pixel Smoothing Mode` defaults to Subpixel Blend (`1`) and `Pixel Smoothing` is `0.35`. `adjacent_tap_edge_blending` remains hidden and false by default. Its cached adjacent-tap implementation is retained, but the user reported no useful visible effect from the exposed toggle; do not re-expose it without validating its visual result. It only affects Edge-Aware and Hybrid modes. Detail-confidence analysis may still run for grain protection independently of the selected smoothing mode.
 6. **Keep all beam-profile implementations even though their selectors are hidden.** The saved defaults are Gaussian Beam (`scanline_profile = 1`), Gaussian spot (`beam_spot_profile = 0`) and Single Lobe (`horizontal_spot_structure = 0`). The alternative Sine scanline waveform, Super-Gaussian and Lorentzian spot kernels, and Core + Tail horizontal structure remain implemented in the shader. Their selector/parameter uniforms are hidden, not deleted. Keep their functions, branches, macros, defaults and documentation synchronized; do not remove them when simplifying the UI. Hidden Tail Energy and Tail Width remain `2.0%` and `2.0x`. The Scanlines & Beam UI contains 12 user-adjustable settings plus a display-only legend. `Scanline Strength = 0` is the user-facing way to bypass vertical beam modulation; phosphor masks and damping wires remain active.
 7. **Respect beam-model and attenuation defaults.** Shared Beam is the default Vertical Beam Model. Per-source-line RGB Attenuation defaults to Source-Domain; Post-Display (Shared Beam-aligned) is optional. The latter is meaningful only for Per-source-line RGB. Field-Phase Flicker forces Per-source-line RGB and Post-Display while active.
@@ -102,7 +102,7 @@ This is the technical handoff for the current CRT-Trinity implementation. The ac
 9. **Understand its phase behaviour accurately.** `FCount` parity switches the phase between 0 and π on successive rendered frames. In the Per-source-line RGB path that becomes a half-cycle shift in beam coordinates, redistributing neighbouring source-line weights. The whole procedural pattern changes phase globally; this is not a physical beam sweeping down the screen or true 480i reconstruction.
 10. **Keep current visual defaults synchronized.** Vignette Strength is `0.5`, Vignette Mapping is Symmetric Viewport, and the hidden `headroom_aware_grain` feature is enabled by default (`true`). Update §3 and §14 whenever a default changes.
 11. **Keep diagnostic views synchronized.** `Debug View` currently has 21 entries, indexed 0–20. Maintain the UI list, pixel-shader branches, composite-stage branches, README list and §14.13 as one contract. Diagnostic paths may deliberately override normal effect early-outs to expose intermediate buffers.
-12. **Track colour domains carefully.** The accumulation stage decodes the source with the BT.1886-style EOTF approximation and stores intermediate values in RGBA16F. Identify whether each value is encoded, linear, tone-mapped or output-referred before adding transfer functions or moving calculations.
+12. **Track color domains carefully.** The accumulation stage decodes the source with the BT.1886-style EOTF approximation and stores intermediate values in RGBA16F. Identify whether each value is encoded, linear, tone-mapped or output-referred before adding transfer functions or moving calculations.
 13. **Respect alpha-channel contracts.** `tSmoothH.a` and `tSmoothV.a` carry detail confidence; `tCrtScene.a` carries scanline metadata, not opacity. Update every consumer if these contracts change.
 14. **Respect sequential render-target lifetimes.** `GaussianBlurTemp` and `GaussianBlurTex` first hold source ghost blur, then are overwritten after the CRT scene pass with halation data. Pass reordering must re-check every read/write.
 15. **Understand the halation/bloom relationship.** Halation is composited directly and also contributes to wider bloom extraction. Bloom Intensity zero bypasses normal bloom pixel work and final bloom sampling, but the three bloom passes remain scheduled by ReShade FX.
@@ -175,7 +175,7 @@ The following table records the current saved defaults and fixed rendering choic
 | Detail Protection (hidden) | `0.50` | Fixed grain reduction using source-detail metadata; retained but hidden from the UI. |
 | Image-Aware Chroma (hidden) | `0.25` | Fixed adaptation of chromatic grain to image saturation; retained but hidden from the UI. |
 | Horizontal / Vertical Blur | `0.5 / 0.5` | Shared blur radii for source ghosting and halation. |
-| Ghost Strength | `0.6` | Colour-separated source-blur contribution. |
+| Ghost Strength | `0.6` | color-separated source-blur contribution. |
 | Halation Strength | `0.15` | Post-emission optical glow. |
 | Halation Respects Scanlines | Off | Glow can spread into scanline gaps. |
 | Halation Threshold | `0.8` | Bright-pass threshold against completed CRT-scene luminance. |
@@ -204,13 +204,13 @@ The technique is an ordered 13-pass pipeline. The order is intentional because s
 4. `Pass_GaussianBlurVertical` — vertical completion of the ghosting blur.
 5. `Pass_SmoothH` — internal-grid source sampling, 3×3 edge analysis, adaptive Pixel Smoothing, horizontal source-cell integration and horizontal spot filtering.
 6. `Pass_SmoothV` — area-integrated vertical source-pixel Gaussian smoothing.
-7. `Pass_RenderCRTScene` — source mapping, channel offsets/fringing, optional per-source-line RGB beam reconstruction, ghosting, phosphor mask, damping wires, display colour matrix, contrast/saturation, vignette and shared Gaussian scanline modulation. Store scanline metadata in alpha.
+7. `Pass_RenderCRTScene` — source mapping, channel offsets/fringing, optional per-source-line RGB beam reconstruction, ghosting, phosphor mask, damping wires, display color matrix, contrast/saturation, vignette and shared Gaussian scanline modulation. Store scanline metadata in alpha.
 8. `Pass_HalationBlurHorizontal` — extract highlights from the completed phosphor/beam scene and blur horizontally.
 9. `Pass_HalationBlurVertical` — complete the halation blur.
 10. `Pass_ExtractBloom` — 4×4 downsample of separately thresholded post-phosphor highlights plus the direct halation contribution.
 11. `Pass_BloomBlurHorizontal` — quarter-resolution horizontal bloom blur.
 12. `Pass_BloomBlurVertical` — quarter-resolution vertical bloom blur.
-13. `Pass_CompositeBloom` — optional faceplate projection, direct halation, bloom, tone mapping, selective warm-colour desaturation, animated grain/flicker, faceplate coverage and final SDR clamp.
+13. `Pass_CompositeBloom` — optional faceplate projection, direct halation, bloom, tone mapping, selective warm-color desaturation, animated grain/flicker, faceplate coverage and final SDR clamp.
 
 The final composite pass has no explicit `RenderTarget`; it writes to the technique output. ReShade FX schedules all declared passes in the technique. A uniform such as `bloom_intensity` can bypass the shader work inside a pass, but it cannot remove a pass from the host schedule.
 
@@ -303,7 +303,7 @@ where `m = acc_modulate` and the maximum is independently applied to R, G and B.
 
 The intended path after accumulation is linear light. Source reconstruction, ghost blur, phosphor-mask multiplication, display matrices, scanline modulation, halation extraction/blur, bloom extraction/blur and tone mapping all operate on these linear values. The shader stores high-dynamic-range intermediate values in FP16 render targets even though the final output is SDR-clamped.
 
-Grain and the final small flicker are added after the filmic tone curve. Their placement is a stylistic display-output choice; it does not turn the full shader into a complete colour-managed display simulation.
+Grain and the final small flicker are added after the filmic tone curve. Their placement is a stylistic display-output choice; it does not turn the full shader into a complete color-managed display simulation.
 
 ### 5.4 Filmic tone mapping and output encoding
 
@@ -319,13 +319,13 @@ x=\max(Y-T,0)
 Y'=\frac{x(6.2x+0.5)}{x(6.2x+1.7)+0.06}
 \]
 
-The output RGB vector is scaled uniformly by `Y'/Y` (with a near-black guard) and is capped if a channel still exceeds 1. This preserves the input colour ratios through the luminance curve rather than rolling off each RGB channel independently. `filmic()` is a tone-mapping curve, **not** an sRGB OETF.
+The output RGB vector is scaled uniformly by `Y'/Y` (with a near-black guard) and is capped if a channel still exceeds 1. This preserves the input color ratios through the luminance curve rather than rolling off each RGB channel independently. `filmic()` is a tone-mapping curve, **not** an sRGB OETF.
 
 No unconditional output sRGB/power-law encoding is applied. The final backbuffer interpretation is managed by DuckStation/ReShade and can depend on backend/output format. Adding an unconditional encode without verifying that contract risks double encoding. The shader finally uses `saturate()` and is therefore SDR-oriented, not HDR-safe.
 
 ## 6. Source-image reconstruction and pixel smoothing
 
-Source reconstruction takes place before the phosphor mask, display-colour transform and CRT beam treatment. Its purpose is to provide a restrained reconstruction of the available rendered source image, not to blur the final CRT pattern.
+Source reconstruction takes place before the phosphor mask, display-color transform and CRT beam treatment. Its purpose is to provide a restrained reconstruction of the available rendered source image, not to blur the final CRT pattern.
 
 ### 6.1 Native raster, internal render grid and active viewport
 
@@ -381,9 +381,9 @@ d_{Co}=|d_R-d_B|,\qquad d_{Cg}=|d_G-0.5(d_R+d_B)|
 D=d_Y+0.25(d_{Co}+d_{Cg})
 \]
 
-It combines luminance and chromatic differences, so equal-luminance colour boundaries can still receive a large range distance. This is a practical YCoCg-like metric, not CIE Lab, Delta-E or a standardized perceptual colour space.
+It combines luminance and chromatic differences, so equal-luminance color boundaries can still receive a large range distance. This is a practical YCoCg-like metric, not CIE Lab, Delta-E or a standardized perceptual color space.
 
-The 3×3 neighbourhood is divided into four overlapping 2×2 quadrants. In each quadrant the code forms approximate horizontal and vertical colour gradients `(gx, gy)`. Their outer products are averaged into a 2×2 structure tensor:
+The 3×3 neighbourhood is divided into four overlapping 2×2 quadrants. In each quadrant the code forms approximate horizontal and vertical color gradients `(gx, gy)`. Their outer products are averaged into a 2×2 structure tensor:
 
 \[
 J=\begin{bmatrix}J_{xx}&J_{xy}\\J_{xy}&J_{yy}\end{bmatrix}
@@ -435,7 +435,7 @@ Each source cell's raw linear R/G/B drives independently widen their channel's s
 \sigma_c=\sigma_{base}(1+0.035\cdot saturate(C_c/1.25))
 \]
 
-The raw source colour sets current even when the centre pixel's adaptive blend changes the displayed reconstruction colour. This keeps the current-width response tied to the original source cell rather than the filter output. The 3.5% coefficient is an implementation constant, not a measured gun-current curve or a UI control.
+The raw source color sets current even when the centre pixel's adaptive blend changes the displayed reconstruction color. This keeps the current-width response tied to the original source cell rather than the filter output. The 3.5% coefficient is an implementation constant, not a measured gun-current curve or a UI control.
 
 The hidden `beam_spot_profile` selects the per-cell spot integral: Gaussian (`0`, default), Super-Gaussian (`1`) or Lorentzian (`2`). The Gaussian area is evaluated from a normal-CDF difference using the shader's bounded error-function approximation. Super-Gaussian area uses bounded 16-point Gauss-Legendre quadrature; Lorentzian uses an `atan` primitive with finite support. Each source-cell kernel is normalized independently. The hidden `horizontal_spot_structure` defaults to Single Lobe (`0`); Core + Tail (`1`) remains available internally and mixes a selected fraction of the normalized core with a wider normalized component. Its hidden Tail Energy and Tail Width defaults are `2.0%` and `2.0x`. The per-channel sigma is still widened slightly according to raw source-channel drive. The shader does not normalize the final output by the sum of heterogeneous cell weights, which would counteract the intended channel/source-dependent spot-width response.
 
@@ -467,7 +467,7 @@ All selectors and tail parameters have `hidden = true;`; they were hidden from t
 
 ### 7.3 Pixel-footprint-integrated Shared Beam
 
-The **Shared Beam** model uses one beam width for the pixel, derived from source luminance measured before ghosting, mask, display colour transform, halation and bloom. The base sigma is mapped from `Vertical Beam Sharpness`:
+The **Shared Beam** model uses one beam width for the pixel, derived from source luminance measured before ghosting, mask, display color transform, halation and bloom. The base sigma is mapped from `Vertical Beam Sharpness`:
 
 \[
 t=saturate((sharpness-0.5)/2.5)
@@ -506,14 +506,14 @@ I_B=\operatorname{sat}(B_{line}/1.25)^{response}
 
 and three corresponding sigmas using the same `σ0 * (1 + 0.65 * widening * I_c)` relationship as the Shared Beam model.
 6. Integrates each channel's selected Gaussian/Super-Gaussian/Lorentzian profile over the output-pixel footprint, normalizes it by that bounded source-line profile's area and includes the channel's edge-validity mask.
-7. Accumulates source colour and beam weights independently for R/G/B. The source colour is divided by its accumulated channel weight, while the beam factor is formed from the channel weight sum multiplied by `Beam Average Drive` and raised to `0.9`. The result is blended with the original source using `saturate(ScanlineStrength/2)`.
+7. Accumulates source color and beam weights independently for R/G/B. The source color is divided by its accumulated channel weight, while the beam factor is formed from the channel weight sum multiplied by `Beam Average Drive` and raised to `0.9`. The result is blended with the original source using `saturate(ScanlineStrength/2)`.
 
 This separates chromatic source reconstruction from spatial beam attenuation: each line's individual channel drive can widen that channel's contribution. The source signal remains in the linear domain and proceeds through the same phosphor mask, profile, contrast, saturation and vignette stages afterward.
 
 `Per-source-line RGB Attenuation` controls where the resulting channel-specific beam factor is applied:
 
-- **Source-Domain (`0`, default):** preserves the original implementation. The reconstructed source colour and RGB beam attenuation are blended into the source before ghosting, phosphor masking, display-colour conversion, contrast, saturation and vignette.
-- **Post-Display (`1`):** blends the reconstructed source colour at the same early point, but defers RGB beam attenuation until after display-colour conversion, contrast, saturation and vignette, alongside the late Shared Beam modulation. This makes attenuation placement more comparable between the two beam models, but changes how ghosting and display transforms interact with scanline depth. The RGB factor is applied in current BT.709 working/output channel coordinates; this is a screen-space approximation, not a physical gun-domain operation.
+- **Source-Domain (`0`, default):** preserves the original implementation. The reconstructed source color and RGB beam attenuation are blended into the source before ghosting, phosphor masking, display-color conversion, contrast, saturation and vignette.
+- **Post-Display (`1`):** blends the reconstructed source color at the same early point, but defers RGB beam attenuation until after display-color conversion, contrast, saturation and vignette, alongside the late Shared Beam modulation. This makes attenuation placement more comparable between the two beam models, but changes how ghosting and display transforms interact with scanline depth. The RGB factor is applied in current BT.709 working/output channel coordinates; this is a screen-space approximation, not a physical gun-domain operation.
 
 The scalar luminance-weighted summary of the effective RGB factor remains in `tCrtScene.a` for `Halation Respects Scanlines`. Post-Display is only meaningful for Per-source-line RGB with the Gaussian Beam scanline profile; the hidden beam-spot profile still selects Gaussian, Super-Gaussian or Lorentzian channel weights. The ordinary selector defaults to Source-Domain. Field-Phase Flicker forces Post-Display while active; the user's normal selection resumes unchanged when disabled.
 
@@ -567,13 +567,13 @@ The rapid flicker follows from the interaction of the forced Gaussian Per-source
 
 This produces the pronounced CRT-like flicker that can look like scanlines moving extremely quickly from top to bottom. Strictly, the shader does **not** sweep one beam sequentially down the screen: it changes the phase of the complete screen-space pattern globally between rendered frames. The forced `Manual Scanline Density = 340` sets the pattern's spatial density, not its temporal speed or a monitor refresh rate. With Rolling Scanlines off, the rapid alternation is driven by `FCount` parity. At 60 rendered FPS, the phase changes every frame and the two-state pattern repeats at 30 Hz; at a rendered rate of `F` FPS, the two-state cycle repeats at `F/2` Hz. Actual presentation depends on frame pacing and display refresh.
 
-Display profile, mask, brightness, contrast, ghosting, halation, bloom and grain can change the flicker's visual prominence but do not set its phase timing. Post-Display attenuation affects where the channel factor enters the colour pipeline, not the flicker clock. The ordinary Scanlines & Beam selections are preserved and resume unchanged when the toggle is disabled.
+Display profile, mask, brightness, contrast, ghosting, halation, bloom and grain can change the flicker's visual prominence but do not set its phase timing. Post-Display attenuation affects where the channel factor enters the color pipeline, not the flicker clock. The ordinary Scanlines & Beam selections are preserved and resume unchanged when the toggle is disabled.
 
 The effect may cause eye strain or dizziness for some viewers. It is worth experimenting with in motion while considering viewing comfort; the mode is intentionally off by default. It is a global procedural phase alternation, not a physical top-to-bottom beam sweep, actual 480i or independent odd/even field reconstruction.
 
 ## 8. Phosphor masks and damping wires
 
-The phosphor mask modulates the individual RGB channel drives in `PS_RenderCRTScene` before the display-colour matrix is applied. It is stored in the CRT scene and therefore follows the completed image when curved geometry is used. Available types are Aperture Grille, Slot Mask, Shadow Mask (Staggered Dots), and None.
+The phosphor mask modulates the individual RGB channel drives in `PS_RenderCRTScene` before the display-color matrix is applied. It is stored in the CRT scene and therefore follows the completed image when curved geometry is used. Available types are Aperture Grille, Slot Mask, Shadow Mask (Staggered Dots), and None.
 
 ### 8.1 Automatic mask pairing and selection
 
@@ -589,7 +589,7 @@ The phosphor mask modulates the individual RGB channel drives in `PS_RenderCRTSc
 | Toshiba AF — Warm Cinema | Slot Mask |
 | Neutral — Standard | Aperture Grille |
 
-Selector `Use Display Profile Default` uses the pairing above and built-in mask constants. Explicit selections map to Aperture Grille, Slot Mask, Shadow Mask or None and use the matching mask-specific group in the single `Phosphor Mask Settings` UI category. The category begins with a legend directing users to `Display Setup → Phosphor Mask Type`; only the group for the explicitly selected mask affects rendering. An explicit mask changes only the mask; it does not change the display-colour profile. `None` returns a neutral `(1,1,1)` mask.
+Selector `Use Display Profile Default` uses the pairing above and built-in mask constants. Explicit selections map to Aperture Grille, Slot Mask, Shadow Mask or None and use the matching mask-specific group in the single `Phosphor Mask Settings` UI category. The category begins with a legend directing users to `Display Setup → Phosphor Mask Type`; only the group for the explicitly selected mask affects rendering. An explicit mask changes only the mask; it does not change the display-color profile. `None` returns a neutral `(1,1,1)` mask.
 
 ### 8.2 Aperture Grille
 
@@ -651,9 +651,9 @@ The wire retains its original smoothstep-like shape: full attenuation weight wit
 
 Do not enable damping wires as a universal Trinitron property; tube construction varies.
 
-## 9. Display colour profiles
+## 9. Display color profiles
 
-The display profiles transform linear RGB channel drives into an approximate display phosphor gamut/white and express emitted values in the shader's linear BT.709 working/output coordinates. They are reference interpretations, not factory calibration files. The profile selector order is intentional: Sony Trinitron is the central hardware/design reference and the first two choices; Neutral — Standard is last as the display-transform bypass option. These profiles only provide colour/white-point customization and the documented automatic mask pairing. They do not select a different complete CRT hardware model: all other shader subsystems remain part of the same Trinitron-oriented presentation.
+The display profiles transform linear RGB channel drives into an approximate display phosphor gamut/white and express emitted values in the shader's linear BT.709 working/output coordinates. They are reference interpretations, not factory calibration files. The profile selector order is intentional: Sony Trinitron is the central hardware/design reference and the first two choices; Neutral — Standard is last as the display-transform bypass option. These profiles only provide color/white-point customization and the documented automatic mask pairing. They do not select a different complete CRT hardware model: all other shader subsystems remain part of the same Trinitron-oriented presentation.
 
 | Index | UI name | Reference interpretation | Automatic mask |
 |---:|---|---|---|
@@ -680,7 +680,7 @@ Uses the P22 D65 matrix endpoint directly. It retains the broad P22 primary inte
 
 ### 9.3 Sony BVM-D24 — EBU Cool
 
-Uses nominal EBU phosphor primaries documented for the BVM-D24E1WE/E1WA reference family. Its matrix is calculated to produce the same cool neutral-white RGB vector as the existing Japanese Cool default. This makes it a hybrid colour-reference option: EBU primaries plus the project's preferred Japanese Cool white character. It is not a factory BVM-D24 D56/D65/D93 preset or a measurement of an individual monitor. The E1WU SMPTE-C phosphor standard is represented by the Toshiba SMPTE-C/D65 reference transform rather than a duplicate profile. This profile changes the colour reference only; it does not change the shader's Trinitron-oriented hardware/effects design target.
+Uses nominal EBU phosphor primaries documented for the BVM-D24E1WE/E1WA reference family. Its matrix is calculated to produce the same cool neutral-white RGB vector as the existing Japanese Cool default. This makes it a hybrid color-reference option: EBU primaries plus the project's preferred Japanese Cool white character. It is not a factory BVM-D24 D56/D65/D93 preset or a measurement of an individual monitor. The E1WU SMPTE-C phosphor standard is represented by the Toshiba SMPTE-C/D65 reference transform rather than a duplicate profile. This profile changes the color reference only; it does not change the shader's Trinitron-oriented hardware/effects design target.
 
 ### 9.4 Sony KX-14CP1 — Monitor Reference
 
@@ -696,11 +696,11 @@ Uses the same SMPTE-C primary approximation with a CIE D55 white-point interpret
 
 ### 9.7 Neutral — Standard
 
-Returns the incoming working RGB unchanged from `apply_display_color_profile()`. It bypasses only the display-profile colour transform; the mask, contrast, saturation, vignette, scanlines, halation, bloom, filmic curve, grain and final output processing still apply. It is therefore a neutral profile reference, not an untouched original-game image or a full-shader bypass. Its automatic mask pairing is Aperture Grille.
+Returns the incoming working RGB unchanged from `apply_display_color_profile()`. It bypasses only the display-profile color transform; the mask, contrast, saturation, vignette, scanlines, halation, bloom, filmic curve, grain and final output processing still apply. It is therefore a neutral profile reference, not an untouched original-game image or a full-shader bypass. Its automatic mask pairing is Aperture Grille.
 
 ### 9.8 Gamut compression and saturation neutral
 
-Some profile matrices create negative RGB components for colours outside the target gamut. The shader calculates Rec.709 luminance `Y`; when the minimum transformed component is negative and `Y > 0`, it scales chroma toward the equal-luminance neutral axis:
+Some profile matrices create negative RGB components for colors outside the target gamut. The shader calculates Rec.709 luminance `Y`; when the minimum transformed component is negative and `Y > 0`, it scales chroma toward the equal-luminance neutral axis:
 
 \[
 s=\operatorname{sat}\left(\frac{Y}{Y-C_{min}}\right),\qquad
@@ -709,11 +709,11 @@ C'=Y+(C-Y)s
 
 This preserves approximate hue and luminance better than clipping each negative channel independently. Positive values above 1 are left to the existing highlight roll-off.
 
-The Saturation control interpolates between the transformed colour and the selected profile's own neutral-white vector normalized to unit Rec.709 luminance. For Japanese Cool this neutral is not `(1,1,1)` in BT.709 coordinates; mixing toward equal RGB would pull its white back toward D65. This profile-relative neutral axis is deliberate.
+The Saturation control interpolates between the transformed color and the selected profile's own neutral-white vector normalized to unit Rec.709 luminance. For Japanese Cool this neutral is not `(1,1,1)` in BT.709 coordinates; mixing toward equal RGB would pull its white back toward D65. This profile-relative neutral axis is deliberate.
 
-### 9.9 Locked selective warm-colour desaturation
+### 9.9 Locked selective warm-color desaturation
 
-A compile-time feature in the final composite evaluates hue in an approximate display-referred view (`pow(saturate(linearRGB), 1/2.2)`) and applies a limited saturation reduction to a warm hue interval. It avoids near-neutral pixels where hue is unstable. The reduction is applied to the original linear RGB toward equal-luminance neutral, preserving Rec.709 luminance. Its hue centre/range/feather/reduction are locked internal constants, not user sliders. This is a subtle colour trim, not a scene/object detector.
+A compile-time feature in the final composite evaluates hue in an approximate display-referred view (`pow(saturate(linearRGB), 1/2.2)`) and applies a limited saturation reduction to a warm hue interval. It avoids near-neutral pixels where hue is unstable. The reduction is applied to the original linear RGB toward equal-luminance neutral, preserving Rec.709 luminance. Its hue centre/range/feather/reduction are locked internal constants, not user sliders. This is a subtle color trim, not a scene/object detector.
 
 ## 10. Ghosting, halation, bloom, vignette, fringing and flicker
 
@@ -731,11 +731,11 @@ centre  0.2270270270
 
 `Horizontal Blur` and `Vertical Blur` set tap spacing in output pixels. Axis-specific edge validity prevents clamp-addressed edge texels from bleeding inward. For supported half- and one-pixel spacing cases, and only when the entire kernel is safely inside the image, the linear Gaussian taps can be combined into five exact bilinear paired fetches. Otherwise the original nine evaluations are retained. A zero Ghost Strength early-outs the source-blur passes; a zero axis radius returns the unblurred sample in that axis.
 
-`PS_RenderCRTScene()` samples the blurred source at several slightly displaced, time-varying positions with channel-separated weightings. The contribution is small and shaped by a source beam-luminance term. It is a stylized coloured ghosting approximation, not a reflection model or a full multi-path analog signal simulation.
+`PS_RenderCRTScene()` samples the blurred source at several slightly displaced, time-varying positions with channel-separated weightings. The contribution is small and shaped by a source beam-luminance term. It is a stylized colored ghosting approximation, not a reflection model or a full multi-path analog signal simulation.
 
 ### 10.2 Optical halation
 
-Halation is extracted from the **completed CRT emission**, after source reconstruction, beam, phosphor mask, damping wires, display colour transform, contrast/saturation, vignette, scanline modulation and brightness. This is important: the blur source represents the light emitted by the simulated CRT scene rather than the untouched game image.
+Halation is extracted from the **completed CRT emission**, after source reconstruction, beam, phosphor mask, damping wires, display color transform, contrast/saturation, vignette, scanline modulation and brightness. This is important: the blur source represents the light emitted by the simulated CRT scene rather than the untouched game image.
 
 `halation_brightpass()` calculates Rec.709 luminance `Y` from `tCrtScene.rgb` and maps the selected threshold `T` into a normalized scalar bright-pass:
 
@@ -776,9 +776,9 @@ At final composite, the blurred bloom is added to the linear CRT scene using `Bl
 
 The vignette is evaluated in CRT scene/faceplate texture space. A symmetric product of distances to four image boundaries is shaped with a square root and a `0.1` floor, then blended by `Vignette Strength`. `Vignette Mapping = Symmetric Viewport` (default) normalizes `SV_Position` against DuckStation's active viewport offset and size, then evaluates the same curve in that rectangle. It gives matching mathematical falloff at the four active-image edges and does not assume the image fills the entire output buffer. `Legacy Fit` remains available and uses the retained NewPixie-derived `screen_uv` coordinates, including their existing unequal horizontal/vertical edge mapping. This is an aesthetic edge falloff, not a measured CRT luminance distribution. The selector changes only vignette coordinates; it does not alter source sampling, geometry projection or scanline pitch.
 
-### 10.5 Colour fringing
+### 10.5 color fringing
 
-The scene stage samples R, G and B at slightly different horizontal/vertical UV offsets, scaled by `Color Fringing`. This approximates a small channel misregistration/colour separation. It is not a complete convergence, beam landing or chromatic-aberration model. The per-source-line RGB beam path mirrors these channel offsets when reconstructing individual line samples.
+The scene stage samples R, G and B at slightly different horizontal/vertical UV offsets, scaled by `Color Fringing`. This approximates a small channel misregistration/color separation. It is not a complete convergence, beam landing or chromatic-aberration model. The per-source-line RGB beam path mirrors these channel offsets when reconstructing individual line samples.
 
 ### 10.6 Interference wobble
 
@@ -820,7 +820,7 @@ Continuous time derives from DuckStation's millisecond `timer` source via `anima
 
 ### 11.5 Detail protection
 
-`PS_SmoothH()` stores source detail confidence in `tSmoothH.a`; `PS_SmoothV()` filters it into `tSmoothV.a`. `grain_detail_factor()` samples that metadata at the mapped source coordinate and blends the grain scale from 1 toward `1 - 0.85*detail` according to the fixed internal `noise_detail_protection = 0.50` setting. This uniform is hidden from the UI (`hidden = true`) but remains active and should not be deleted. This protects isolated dots, irregular textures, luminance edges and equal-luminance colour boundaries identified by the same 3×3 analysis used for adaptive Pixel Smoothing. It is not a semantic classifier and does not identify objects.
+`PS_SmoothH()` stores source detail confidence in `tSmoothH.a`; `PS_SmoothV()` filters it into `tSmoothV.a`. `grain_detail_factor()` samples that metadata at the mapped source coordinate and blends the grain scale from 1 toward `1 - 0.85*detail` according to the fixed internal `noise_detail_protection = 0.50` setting. This uniform is hidden from the UI (`hidden = true`) but remains active and should not be deleted. This protects isolated dots, irregular textures, luminance edges and equal-luminance color boundaries identified by the same 3×3 analysis used for adaptive Pixel Smoothing. It is not a semantic classifier and does not identify objects.
 
 This reuse avoids another final-stage neighbourhood analysis. The alpha channel is metadata, not opacity.
 
@@ -828,7 +828,7 @@ This reuse avoids another final-stage neighbourhood analysis. The alpha channel 
 
 `noise_chroma` is the fixed internal **Grain Chroma** control (`0.71`, hidden from the UI): `0` uses a shared monochrome field for RGB, `1` uses independent channel fields, and intermediate values blend a shared field and independent RGB fields before variance normalization. Keep the uniform and its calculation even though it is hidden.
 
-`noise_color_awareness` is the fixed internal **Image-Aware Chroma** control (`0.25`, hidden from the UI). It scales only the chromatic component. Near-neutral pixels receive mostly monochromatic grain; moderate saturation increases chroma activity; highly saturated details receive a softened independent-RGB component. It does not alter the image colour itself.
+`noise_color_awareness` is the fixed internal **Image-Aware Chroma** control (`0.25`, hidden from the UI). It scales only the chromatic component. Near-neutral pixels receive mostly monochromatic grain; moderate saturation increases chroma activity; highly saturated details receive a softened independent-RGB component. It does not alter the image color itself.
 
 ### 11.7 Amplitude and luminance adaptation
 
@@ -958,8 +958,8 @@ The top-level version text is `v1`. Do not reintroduce historic version-series l
 
 | Variable | Default | Range / items | Purpose |
 |---|---:|---|---|
-| `display_profile` | `0` | Seven profile items, see §9 | Selects display colour transform. Japanese Cool is first/default; Neutral — Standard is last and bypasses only the profile transform. |
-| `phosphor_mask_selection` | `0` | Profile Default / Aperture / Slot / Shadow / None | Automatic pairing or explicit mask selection; the mask does not change the display colour profile. |
+| `display_profile` | `0` | Seven profile items, see §9 | Selects display color transform. Japanese Cool is first/default; Neutral — Standard is last and bypasses only the profile transform. |
+| `phosphor_mask_selection` | `0` | Profile Default / Aperture / Slot / Shadow / None | Automatic pairing or explicit mask selection; the mask does not change the display color profile. |
 | `phosphor_mask_help` | `0` | Persistent text | Explains the automatic profile pairing and that explicit mask selection changes only the mask. |
 
 ### 14.3 Image & Color
@@ -1064,7 +1064,7 @@ The category follows Noise & Grain in the UI. `flicker_amount` is included here 
 |---|---:|---|---|
 | `blur_x` | `0.5` | `0–5`, `0.25` | Horizontal source ghost and post-CRT halation blur radius. |
 | `blur_y` | `0.5` | `0–5`, `0.25` | Vertical source ghost and post-CRT halation blur radius. |
-| `ghost_strength` | `0.6` | `0–3`, `0.05` | Colour-separated source-blur contribution. |
+| `ghost_strength` | `0.6` | `0–3`, `0.05` | color-separated source-blur contribution. |
 | `halation_strength` | `0.15` | `0–2`, `0.05` | Post-emission optical glow; near zero skips halation sampling. |
 | `halation_respects_scanlines` | `false` | Boolean | Off allows glow into gaps; on reapplies local scanline factor. |
 | `halation_threshold` | `0.8` | `0–0.99`, `0.01` | Completed CRT-scene linear luminance bright-pass threshold. |
@@ -1081,7 +1081,7 @@ The category follows Noise & Grain in the UI. `flicker_amount` is included here 
 
 ### 14.11 Phosphor Mask Settings
 
-All three mask-specific groups are presented together in one `Phosphor Mask Settings` UI category. The legend at the top directs the user to `Display Setup → Phosphor Mask Type`. `Use Display Profile Default` selects the profile's built-in mask and parameters; editable values below are used only when their corresponding mask is explicitly selected. Selecting an explicit mask changes the mask only, not the display-colour profile.
+All three mask-specific groups are presented together in one `Phosphor Mask Settings` UI category. The legend at the top directs the user to `Display Setup → Phosphor Mask Type`. `Use Display Profile Default` selects the profile's built-in mask and parameters; editable values below are used only when their corresponding mask is explicitly selected. Selecting an explicit mask changes the mask only, not the display-color profile.
 
 The UI-only text uniforms `phosphor_mask_settings_help`, `aperture_grille_group_label`, `slot_mask_group_label` and `staggered_shadow_mask_group_label` provide the category legend and the three in-category group labels. They do not participate in rendering or change any mask parameters.
 
@@ -1130,7 +1130,7 @@ The UI-only text uniforms `phosphor_mask_settings_help`, `aperture_grille_group_
 1. **Accumulated Frame (Linear)** — the current accumulated source before CRT reconstruction.
 2. **Current Input (Encoded)** — the incoming backbuffer signal before the accumulation EOTF.
 3. **Trail Only (Linear ×4)** — retained history contribution above the current frame, amplified for visibility.
-4. **Counter and Toggle Test** — frame-parity colours and the effective interlace/phase toggle state.
+4. **Counter and Toggle Test** — frame-parity colors and the effective interlace/phase toggle state.
 5. **Phosphor Mask Only** — selected RGB mask without the image.
 6. **CRT Scene (Display View, No Bloom)** — processed scene with halation and tone mapping but without wide bloom.
 7. **Bloom Blur (×4)** — the quarter-resolution final bloom blur, amplified.
@@ -1154,7 +1154,7 @@ Debug paths deliberately bypass parts of normal final projection/processing. The
 
 These are accurate boundaries of the current shader, not automatic defects that must all be fixed.
 
-### 15.1 SDR-oriented colour path
+### 15.1 SDR-oriented color path
 
 - Input is clamped to normalized SDR values before the EOTF approximation.
 - The accumulation stage applies a retained `1.25` gain.
@@ -1164,7 +1164,7 @@ These are accurate boundaries of the current shader, not automatic defects that 
 
 ### 15.2 No complete analog video model
 
-The shader processes DuckStation's post-render image. It does not encode/decode composite, S-Video, component, RGB, RF, NTSC or PAL, and does not implement their full bandwidth limits, chroma/luma crosstalk, subcarrier phase, dot crawl, cross-colour, colour bleed or time-base errors.
+The shader processes DuckStation's post-render image. It does not encode/decode composite, S-Video, component, RGB, RF, NTSC or PAL, and does not implement their full bandwidth limits, chroma/luma crosstalk, subcarrier phase, dot crawl, cross-color, color bleed or time-base errors.
 
 ### 15.3 No true 480i field reconstruction
 
@@ -1194,12 +1194,12 @@ The shader processes DuckStation's post-render image. It does not encode/decode 
 - Slot/Shadow mean-transmission compensation is approximate.
 - Damping wires are optional and not universal to every grille tube.
 
-### 15.7 Colour profiles are reference interpretations
+### 15.7 color profiles are reference interpretations
 
 - Japanese P22 is an aggregate estimate and not a factory Sony calibration.
 - KX-14CP1 uses a separate manually calibrated model reference, not a full device characterisation.
 - Toshiba SMPTE-C/D65 and SMPTE-C/D55 are reference/aesthetic interpretations, not measured Toshiba AF/Cinema factory settings.
-- BVM-D24 EBU Cool combines nominal EBU primaries with the default cool white character; it is not a factory colour-temperature preset.
+- BVM-D24 EBU Cool combines nominal EBU primaries with the default cool white character; it is not a factory color-temperature preset.
 - The shader uses BT.709-like working/output coordinates and is not a complete ICC display-management pipeline.
 
 ### 15.8 Curvature filtering is not full EWA
@@ -1220,7 +1220,7 @@ When `InternalWidth/Height` is unavailable, source reconstruction falls back to 
 
 ### 15.12 Sampling and high-frequency interaction
 
-The source image, mask, scanlines and display reconstruction all contain spatial frequencies. Their combination can produce moiré, aliasing, false colour, uneven mask pitch or busy texture depending on output resolution, internal resolution, viewport, content and geometry. The aperture-grille pitch floor reduces one class of low-resolution aliasing but does not make every mask/scanline combination alias-free.
+The source image, mask, scanlines and display reconstruction all contain spatial frequencies. Their combination can produce moiré, aliasing, false color, uneven mask pitch or busy texture depending on output resolution, internal resolution, viewport, content and geometry. The aperture-grille pitch floor reduces one class of low-resolution aliasing but does not make every mask/scanline combination alias-free.
 
 ### 15.13 Runtime and backend verification
 
@@ -1231,9 +1231,9 @@ Static source review does not prove FX compilation or runtime behaviour. Validat
 The shader is particularly suited to:
 
 - PS1 and similar retro games whose art benefits from gentle phosphor/scanline texture;
-- pixel-art scenes with large colour blocks, gradients, lighting and textured backgrounds;
+- pixel-art scenes with large color blocks, gradients, lighting and textured backgrounds;
 - users who want CRT character without a large bezel, strong curvature or an elaborate analog signal chain;
-- users who like selecting a display colour character (cool, balanced, warm, neutral) without replacing the whole effect;
+- users who like selecting a display color character (cool, balanced, warm, neutral) without replacing the whole effect;
 - mild smoothing that softens harsh pixel scaling while retaining the recognisable pixel-art structure;
 - optional masks/beam controls for enthusiasts who want to experiment.
 
@@ -1275,7 +1275,7 @@ Do not blindly brighten the image before examining whether masks/scanlines are r
 
 ### Route C — Stronger or more conspicuous CRT presentation
 
-Possible directions include stronger mask/scanline modulation, more visible halation or bloom, increased ghosting/colour fringing, or more pronounced curvature. These can be separate controls, presets, or integrated into a new baseline depending on the user's request. Stronger is not automatically more historically or physically accurate; describe the intended aesthetic honestly.
+Possible directions include stronger mask/scanline modulation, more visible halation or bloom, increased ghosting/color fringing, or more pronounced curvature. These can be separate controls, presets, or integrated into a new baseline depending on the user's request. Stronger is not automatically more historically or physically accurate; describe the intended aesthetic honestly.
 
 ### Route D — Display/profile exploration
 
@@ -1283,7 +1283,7 @@ The current profile system can be extended with named reference profiles. A new 
 
 - source primaries/white-point assumptions;
 - the matrix or chromatic adaptation used;
-- target RGB colour space;
+- target RGB color space;
 - whether the data are measured, literature-derived, or aesthetic;
 - mask pairing defaults, if any;
 - uncertainty and provenance.
@@ -1315,10 +1315,10 @@ If the user asks for composite/S-Video/NTSC/PAL aesthetics, this is a distinct s
 - chroma subcarrier modulation and phase;
 - luma/chroma bandwidth filtering;
 - chroma demodulation and reconstruction;
-- dot crawl / cross-colour / chroma bleed;
+- dot crawl / cross-color / chroma bleed;
 - signal noise and timebase errors.
 
-These can be optional layers, a new signal-processing path, or the core of a redesigned preset depending on the user's goal. Distinguish a standard-inspired encoder/decoder from an artistic approximation, and explain any changes to colour, bandwidth, latency, performance, and compatibility.
+These can be optional layers, a new signal-processing path, or the core of a redesigned preset depending on the user's goal. Distinguish a standard-inspired encoder/decoder from an artistic approximation, and explain any changes to color, bandwidth, latency, performance, and compatibility.
 
 ### Route H — Genuine interlaced / 480i processing
 
@@ -1364,7 +1364,7 @@ These are current validation priorities and possible future directions, not asse
 15. **Aperture Grille:** Compare the analytic smoothed-stripe integral to high-sample numeric integration across fractional pitch, width, gap, viewport offset, edge pixels and the 3-output-pixel period floor.
 16. **Slot/Shadow masks:** Compare 8×8 coverage against 16×16/32×32 references at representative widths, gaps, row phases and heights. Check their approximate mean-transmission compensation.
 17. **Damping wires:** Test subpixel wire positions and viewport offsets against numerical integration. Confirm they only apply to Aperture Grille and custom/default toggles are respected.
-18. **Neutral and display profiles:** Verify index-to-transform and automatic mask pairing. Neutral must bypass only the display-colour transform and still receive the rest of the shader; its automatic mask is Aperture Grille.
+18. **Neutral and display profiles:** Verify index-to-transform and automatic mask pairing. Neutral must bypass only the display-color transform and still receive the rest of the shader; its automatic mask is Aperture Grille.
 19. **Diagnostics 0–20:** Exercise every Debug View on/off path. Confirm source ghost blur is inspected before scratch-target reuse; halation views force only the required work; bloom views work at zero Bloom Intensity; vignette, mask+dampers and geometry coverage agree with actual scene paths.
 20. **Halation A/B:** Compare bright highlights crossing scanline gaps. Check Strength zero, zero blur axes and post-emission bright-pass source. Confirm diagnostic modes do not contaminate normal output after returning to Off.
 21. **Bloom zero path:** Check Bloom Intensity exactly 0 and >0, including Debug Views 7/8. The three quarter-resolution passes remain scheduled at zero although their normal sampling/blur paths early-out.
@@ -1399,7 +1399,7 @@ For every meaningful shader change:
 | Neutral — Standard | Bypasses display-profile transform only; Aperture Grille remains the automatic mask. |
 | Sony Japanese Cool vs Balanced Color | Preferred cool white character versus D65 P22 interpretation. |
 | Toshiba AF Warm Cinema vs Balanced Color | D55-style warm versus D65 balanced interpretation; automatic Slot Mask. |
-| Aperture / Slot / Shadow / None | Mask geometry, mean transmission and colour response. |
+| Aperture / Slot / Shadow / None | Mask geometry, mean transmission and color response. |
 | Gaussian scanline strength 0 / default | Neutral and normal vertical beam behaviour. |
 | Shared Beam vs Per-source-line RGB | Shared luminance beam against independent per-line/channel reconstruction. |
 | Source-Domain vs Post-Display | Attenuation order and interaction with ghosting/profile/contrast. |
@@ -1435,7 +1435,7 @@ Line numbers move. Use function names and this map; verify the current source be
 | `source_reconstruction_scale_from_native()` | Convert native pixel/line controls into internal-grid units. |
 | `source_viewport_offset_px()`, `source_viewport_size_px()` | Active source viewport bounds. |
 | `sample_accum_source_cell()` | Sample an internal/native source-cell centre without integer-output rounding. |
-| `source_sqrt_rgb()`, `source_colour_distance_sqrt()` | Comparison-space transform and YCoCg-like local difference. |
+| `source_sqrt_rgb()`, `source_color_distance_sqrt()` | Comparison-space transform and YCoCg-like local difference. |
 | `source_edge_frame()` | Four-quadrant structure tensor, edge normal and coherence/activity. |
 | `source_edge_neighbour_weight()`, `source_edge_aware_pixel_blend()` | Full 3×3 anisotropic bilateral Pixel Smoothing blend. |
 | `source_edge_frame_two_columns()`, `source_edge_aware_adjacent_pixel_blend()` | Cached two-column tensor and hidden optional adjacent horizontal-tap blend (`false` default). |
@@ -1447,7 +1447,7 @@ Line numbers move. Use function names and this map; verify the current source be
 | `aperture_grille_*()` | Analytic smoothed stripe/triad integrals. |
 | `build_phosphor_mask()` | Select built-in/custom mask values, pitch safeguards, integration and mean compensation. |
 | `damper_wire_*()`, `aperture_damper_transmission()` | Pixel-integrated viewport-relative aperture-grille damping wires and shared diagnostic/scene attenuation. |
-| `apply_display_color_profile()` | Six colour transforms plus Neutral bypass; seven UI profile choices total. |
+| `apply_display_color_profile()` | Six color transforms plus Neutral bypass; seven UI profile choices total. |
 | `filmic_luminance()`, `filmic()` | Black-coordinated luminance tone curve. |
 | `screen_fit_uv()`, `vignette_multiplier()` | Retained aspect/framing transform and selectable vignette mapping. |
 | `hash_noise_*()`, `spatial_grain_value()` | Deterministic spatial grain field, scale and variance normalization. |
@@ -1489,6 +1489,6 @@ The display profiles, masks, beam reconstruction, source filtering, grain protec
 
 The simplest accurate description is:
 
-> CRT-Trinity is a highly customizable Sony Trinitron-inspired CRT post-processing ReShade FX shader for DuckStation, built on Mattias Gustavsson's NewPixie CRT. The entire rendering approach is guided by selected characteristics of the Sony Trinitron aperture-grille CRT family, with a cool Japanese P22-inspired default, while the saved values also express the author's personal visual preference. The current setup uses Subpixel Blend source reconstruction, Gaussian Beam scanlines, a Gaussian Single Lobe spot, Shared Beam, a Symmetric Viewport vignette, enabled-by-default Headroom-Aware Grain, Flat geometry and an Aperture Grille mask. The hidden Sine, Super-Gaussian, Lorentzian and Core + Tail implementations remain available internally. Other display profiles provide colour/white-point and automatic-mask alternatives rather than separate complete television simulations. Grain, ghosting, bloom, flicker and other finishing effects are aesthetic choices where appropriate, not claims about the physical behaviour of every CRT. The shader is a screen-space post-process, not a physically complete CRT or analog-video simulation.
+> CRT-Trinity is a highly user-configurable Sony Trinitron-inspired CRT post-processing ReShade FX shader for DuckStation, built on Mattias Gustavsson's NewPixie CRT. The entire rendering approach is guided by selected characteristics of the Sony Trinitron aperture-grille CRT family, with a cool Japanese P22-inspired default, while the saved values also express the author's personal visual preference. The current setup uses Subpixel Blend source reconstruction, Gaussian Beam scanlines, a Gaussian Single Lobe spot, Shared Beam, a Symmetric Viewport vignette, enabled-by-default Headroom-Aware Grain, Flat geometry and an Aperture Grille mask. The hidden Sine, Super-Gaussian, Lorentzian and Core + Tail implementations remain available internally. Other display profiles provide color/white-point and automatic-mask alternatives rather than separate complete television simulations. Grain, ghosting, bloom, flicker and other finishing effects are aesthetic choices where appropriate, not claims about the physical behaviour of every CRT. The shader is a screen-space post-process, not a physically complete CRT or analog-video simulation.
 
 Treat this document as the technical handoff to future AI assistants and developers. It explains what the shader currently computes, what its approximations mean, which data contracts its passes rely on, where controls take effect, what the diagnostics show and what it does not attempt to simulate. The exact `CRT-Trinity.fx` source remains authoritative. The shader is one unified implementation and should not be documented as a changelog or a collection of version-specific feature batches.

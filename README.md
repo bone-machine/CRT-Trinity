@@ -21,15 +21,15 @@ I mainly tuned the look while playing *Castlevania: Symphony of the Night* and *
 
 See `AGENTS.md` for the detailed mathematics, pass graph, resource handling, diagnostics and implementation notes.
 
-## Display Colour Profiles
+## Display color Profiles
 
-The profile choices are grouped around a few different colour characters rather than separate full television emulations:
+The profile choices are grouped around a few different color characters rather than separate full television emulations:
 
-- **Sony Trinitron** profiles use a P22-inspired colour reference. **Japanese Cool** is the default, with the cooler, slightly blue-ish look; the other Sony options provide more balanced or monitor-oriented interpretations. Their automatic mask is **Aperture Grille**.
+- **Sony Trinitron** profiles use a P22-inspired color reference. **Japanese Cool** is the default, with the cooler, slightly blue-ish look; the other Sony options provide more balanced or monitor-oriented interpretations. Their automatic mask is **Aperture Grille**.
 - **Toshiba AF** profiles use an SMPTE-C reference: one balanced around D65 and one warmer, D55-style option. Their automatic mask is **Slot Mask**.
-- **Neutral — Standard** bypasses the display-profile colour transform and uses the **Aperture Grille** automatic mask. It is neutral only with respect to that transform; the rest of CRT-Trinity still applies.
+- **Neutral — Standard** bypasses the display-profile color transform and uses the **Aperture Grille** automatic mask. It is neutral only with respect to that transform; the rest of CRT-Trinity still applies.
 
-These are reference colour/white-point interpretations, not measured factory calibrations. With **Use Display Profile Default**, the shader selects the mask pairing described above. Choosing an explicit mask changes only the mask, not the display colour profile.
+These are reference color/white-point interpretations, not measured factory calibrations. With **Use Display Profile Default**, the shader selects the mask pairing described above. Choosing an explicit mask changes only the mask, not the display color profile.
 
 ## UI Guide
 
@@ -37,12 +37,12 @@ The shader exposes the following controls in DuckStation.
 
 ### Display Setup
 
-- **Display Color Profile** — selects the colour/white-point interpretation described above.
-- **Phosphor Mask Type** — chooses the profile's automatic mask, an explicit Aperture Grille, Slot Mask or Staggered Shadow Mask, or no mask. Selecting a mask here makes its matching group under **Phosphor Mask Settings** active for customization. The colour profile is left unchanged.
+- **Display Color Profile** — selects the color/white-point interpretation described above.
+- **Phosphor Mask Type** — chooses the profile's automatic mask, an explicit Aperture Grille, Slot Mask or Staggered Shadow Mask, or no mask. Selecting a mask here makes its matching group under **Phosphor Mask Settings** active for customization. The color profile is left unchanged.
 
 ### Image & Color
 
-- **Brightness**, **Contrast Curve**, **Saturation**, **Gamma** and **Black Level** — adjust overall level, tonal response, colour intensity, display-gamma approximation and input black reference.
+- **Brightness**, **Contrast Curve**, **Saturation**, **Gamma** and **Black Level** — adjust overall level, tonal response, color intensity, display-gamma approximation and input black reference.
 - **Vignette Strength** — edge-darkening amount; default `0.5`.
 - **Vignette Mapping** — Symmetric Viewport (default) evaluates the falloff against the active image rectangle; Legacy Fit preserves the previous framing.
 - **Color Fringing** — adjusts the small offsets between red, green and blue source sampling positions.
@@ -116,33 +116,7 @@ To customize a phosphor mask, select Aperture Grille, Slot Mask or Staggered Sha
 
 ### Diagnostics
 
-**Debug View** provides 21 inspection modes. Set it back to **Off** to restore the normal image.
-
-| Index | View | What it shows |
-|---:|---|---|
-| 0 | Off | Normal rendering. |
-| 1 | Accumulated Frame (Linear) | Current accumulated source before CRT reconstruction. |
-| 2 | Current Input (Encoded) | Incoming backbuffer signal before the accumulation EOTF. |
-| 3 | Trail Only (Linear ×4) | Retained history contribution, amplified. |
-| 4 | Counter and Toggle Test | Frame-parity colours and effective phase-toggle state. |
-| 5 | Phosphor Mask Only | Selected RGB mask without the image. |
-| 6 | CRT Scene (Display View, No Bloom) | Processed scene with halation/tone mapping, without wide bloom. |
-| 7 | Bloom Blur (×4) | Final quarter-resolution bloom blur, amplified. |
-| 8 | Bloom Extract (×4) | Bloom extraction before final blur, amplified. |
-| 9 | Horizontal Source Reconstruction | Horizontally reconstructed source, tone-mapped for visibility. |
-| 10 | Vertical Source Reconstruction | Vertically reconstructed source, tone-mapped for visibility. |
-| 11 | Source Detail Confidence | Detail-protection metadata. |
-| 12 | Source Ghost Blur (×4) | Source blur used for ghosting, before scratch-target reuse. |
-| 13 | Scanline / Beam Factor | Local vertical beam attenuation factor. |
-| 14 | Halation Bright Pass (×4) | Thresholded highlights before horizontal blur. |
-| 15 | Halation Horizontal Blur (×4) | Horizontal halation intermediate. |
-| 16 | Halation Blur (×4) | Completed halation blur. |
-| 17 | Vignette Falloff | Selected Legacy Fit or Symmetric Viewport vignette. |
-| 18 | CRT Surface Coverage | Projected faceplate coverage/edge mask. |
-| 19 | Phosphor Mask + Damping Wires | Selected mask combined with effective damping-wire transmission. |
-| 20 | CRT Scene (Linear, Pre-Glow) | Linear CRT scene before halation and bloom compositing. |
-
-Some diagnostic views deliberately force intermediate work (for example, halation or bloom inspection) even when the corresponding effect is disabled in the normal image.
+**Debug View** provides 21 inspection modes for examining source inputs and reconstruction, temporal history, beam attenuation, phosphor-mask and damping-wire output, surface coverage, and intermediate halation/bloom stages. Some views force intermediate work even when the corresponding effect is disabled; set Debug View to **Off** to restore normal rendering.
 
 ## Installation
 
@@ -157,4 +131,4 @@ Copy `CRT-Trinity.fx` into DuckStation's `shaders/reshade/Shaders/` directory an
 
 ## License
 
-CRT-Trinity's custom reconstruction, beam, mask, colour-profile, geometry, grain, temporal and optical-effect implementations and saved defaults are project-specific work by bone-machine, developed with AI assistance. Distributed under the MIT License; see `LICENSE`.
+CRT-Trinity's custom reconstruction, beam, mask, color-profile, geometry, grain, temporal and optical-effect implementations and saved defaults are project-specific work by bone-machine, developed with AI assistance. Distributed under the MIT License; see `LICENSE`.

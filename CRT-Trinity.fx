@@ -12,7 +12,7 @@
 // subsystem—source reconstruction, beam/scanline treatment, phosphor structure,
 // temporal behaviour, grain/noise, ghosting, halation, bloom and optional geometry—
 // is designed and tuned as part of one cohesive Trinitron-inspired presentation.
-// Other display profiles are colour/white-point and automatic-mask customizations,
+// Other display profiles are color/white-point and automatic-mask customizations,
 // not independent full simulations of the named televisions.
 //
 // Research considers Trinitron tube construction and operating principles, including
@@ -98,7 +98,7 @@ uniform int display_profile <
     ui_items = "Sony Trinitron — Japanese Cool\0Sony Trinitron — Balanced Color\0Sony BVM-D24 — EBU Cool\0Sony KX-14CP1 — Monitor Reference\0Toshiba AF — Balanced Color\0Toshiba AF — Warm Cinema\0Neutral — Standard\0";
     ui_label = "Display Color Profile";
     ui_category = "Display Setup";
-    ui_tooltip = "Choose the colour character. Sony P22 is the cooler Japanese-inspired reference; Toshiba uses SMPTE-C with balanced D65 and warm D55 interpretations; BVM-D24 EBU Cool uses the published EBU phosphor primaries with the existing Japanese Cool white character; Neutral bypasses only the display-colour transform; masks and all later shader processing still apply. These are reference interpretations, not individual-tube calibrations.";
+    ui_tooltip = "Choose the color character. Sony P22 is the cooler Japanese-inspired reference; Toshiba uses SMPTE-C with balanced D65 and warm D55 interpretations; BVM-D24 EBU Cool uses the published EBU phosphor primaries with the existing Japanese Cool white character; Neutral bypasses only the display-color transform; masks and all later shader processing still apply. These are reference interpretations, not individual-tube calibrations.";
 > = 0;
 
 uniform int phosphor_mask_selection <
@@ -106,7 +106,7 @@ uniform int phosphor_mask_selection <
     ui_items = "Use Display Profile Default\0Aperture Grille\0Slot Mask\0Shadow Mask (Staggered Dots)\0None\0";
     ui_label = "Phosphor Mask Type";
     ui_category = "Display Setup";
-    ui_tooltip = "Use Display Profile Default follows the selected profile’s built-in mask and settings. An explicit mask choice uses the corresponding group under Phosphor Mask Settings and overrides only the mask. The display colour profile remains active. None disables the mask.";
+    ui_tooltip = "Use Display Profile Default follows the selected profile’s built-in mask and settings. An explicit mask choice uses the corresponding group under Phosphor Mask Settings and overrides only the mask. The display color profile remains active. None disables the mask.";
 > = 0;
 
 uniform int phosphor_mask_help
@@ -265,7 +265,7 @@ uniform int screen_geometry <
     ui_items = "Flat\0Cylindrical\0Spherical\0Aspherical\0";
     ui_label = "CRT Surface Profile";
     ui_category = "Screen Geometry";
-    ui_tooltip = "Flat bypasses projection. Cylindrical curves horizontally; Spherical uses a true spherical cap; Aspherical uses independent horizontal/vertical radii plus edge departure. Shared by all display colour profiles.";
+    ui_tooltip = "Flat bypasses projection. Cylindrical curves horizontally; Spherical uses a true spherical cap; Aspherical uses independent horizontal/vertical radii plus edge departure. Shared by all display color profiles.";
 > = 0;
 
 uniform float surface_radius <
@@ -451,7 +451,7 @@ uniform int per_source_line_attenuation_stage <
     ui_items = "Source-Domain\0Post-Display (Shared Beam-aligned)\0";
     ui_label = "Per-source-line RGB Attenuation";
     ui_category = "Scanlines & Beam";
-    ui_tooltip = "Only affects Per-source-line RGB. Source-Domain (default) applies RGB attenuation before ghosting and the display transforms. Post-Display applies its channel-specific factor after display colour, contrast, saturation and vignette, alongside Shared Beam. Field-Phase Flicker forces Post-Display while active.";
+    ui_tooltip = "Only affects Per-source-line RGB. Source-Domain (default) applies RGB attenuation before ghosting and the display transforms. Post-Display applies its channel-specific factor after display color, contrast, saturation and vignette, alongside Shared Beam. Field-Phase Flicker forces Post-Display while active.";
 > = 0;
 
 uniform float scanline_sharpness <
@@ -589,7 +589,7 @@ uniform float noise_chroma <
     ui_step = 0.01;
     ui_label = "Grain Chroma";
     ui_category = "Noise & Grain";
-    ui_tooltip = "0 uses the same neutral grain variation for all RGB channels; 1 uses independent RGB grain. Intermediate values blend between them while approximately preserving noise strength. Image-Aware Chroma can modulate this by the underlying image colour.";
+    ui_tooltip = "0 uses the same neutral grain variation for all RGB channels; 1 uses independent RGB grain. Intermediate values blend between them while approximately preserving noise strength. Image-Aware Chroma can modulate this by the underlying image color.";
 > = 0.71;
 
 uniform float noise_animation_speed <
@@ -639,7 +639,7 @@ uniform float noise_color_awareness <
     ui_step = 0.05;
     ui_label = "Image-Aware Chroma";
     ui_category = "Noise & Grain";
-    ui_tooltip = "Adapts Grain Chroma to the rendered colour. Near-neutral areas receive mostly monochromatic grain; moderately coloured areas retain chroma, while highly saturated details get gentler colour variation. 0 disables this adaptation.";
+    ui_tooltip = "Adapts Grain Chroma to the rendered color. Near-neutral areas receive mostly monochromatic grain; moderately colored areas retain chroma, while highly saturated details get gentler color variation. 0 disables this adaptation.";
 > = 0.25;
 
 // SIGNAL & TEMPORAL EFFECTS ------------------------------------------------------
@@ -834,7 +834,7 @@ uniform float aperture_custom_pitch <
     ui_step = 0.25;
     ui_label = "Triad Pitch (pixels at 1080p)";
     ui_category = "Phosphor Mask Settings";
-    ui_tooltip = "Aperture-grille-only RGB triad pitch, scaled with active viewport height. The rendered triplet period is kept at least 3 output pixels to avoid low-resolution colour aliasing.";
+    ui_tooltip = "Aperture-grille-only RGB triad pitch, scaled with active viewport height. The rendered triplet period is kept at least 3 output pixels to avoid low-resolution color aliasing.";
 > = 3.0;
 
 uniform float aperture_custom_stripe_width <
@@ -906,7 +906,7 @@ uniform float slot_custom_stripe_width <
     ui_step = 0.01;
     ui_label = "Slot Width";
     ui_category = "Phosphor Mask Settings";
-    ui_tooltip = "Width of each emitting vertical colour slot, as a fraction of one RGB cell.";
+    ui_tooltip = "Width of each emitting vertical color slot, as a fraction of one RGB cell.";
 > = 0.6;
 
 uniform float slot_custom_gap <
@@ -916,7 +916,7 @@ uniform float slot_custom_gap <
     ui_step = 0.01;
     ui_label = "Inter-Slot Gap";
     ui_category = "Phosphor Mask Settings";
-    ui_tooltip = "Minimum dark separation between adjacent colour slots, as a fraction of one RGB cell.";
+    ui_tooltip = "Minimum dark separation between adjacent color slots, as a fraction of one RGB cell.";
 > = 0.5;
 
 uniform float slot_custom_height <
@@ -1473,15 +1473,15 @@ float3 sample_accum_source_cell(int2 cell, float2 viewport_offset,
     return tex2D(sAccumFrame, sample_centre * ReShade::PixelSize.xy).rgb;
 }
 
-float3 source_sqrt_rgb(float3 colour)
+float3 source_sqrt_rgb(float3 color)
 {
-    return sqrt(max(colour, float3(0.0, 0.0, 0.0)));
+    return sqrt(max(color, float3(0.0, 0.0, 0.0)));
 }
 
 // YCoCg-like distance in the square-root RGB comparison domain. Inputs are
 // pretransformed once per source-sample cell, then reused by tensor, bilateral
 // weights and grain-detail confidence. Accumulated image values remain linear.
-float source_colour_distance_sqrt(float3 a_sqrt, float3 b_sqrt)
+float source_color_distance_sqrt(float3 a_sqrt, float3 b_sqrt)
 {
     float3 d = a_sqrt - b_sqrt;
     float d_y = abs(dot(d, float3(0.2126, 0.7152, 0.0722)));
@@ -1646,11 +1646,11 @@ float3 source_edge_aware_adjacent_pixel_blend(
         s_inner_top, s_inner_centre, s_inner_bottom,
         inner_direction_x, edge_normal, edge_activity);
 
-    float d_outer_top = source_colour_distance_sqrt(s_target, s_outer_top);
-    float d_outer_bottom = source_colour_distance_sqrt(s_target, s_outer_bottom);
-    float d_inner_top = source_colour_distance_sqrt(s_target, s_inner_top);
-    float d_inner_centre = source_colour_distance_sqrt(s_target, s_inner_centre);
-    float d_inner_bottom = source_colour_distance_sqrt(s_target, s_inner_bottom);
+    float d_outer_top = source_color_distance_sqrt(s_target, s_outer_top);
+    float d_outer_bottom = source_color_distance_sqrt(s_target, s_outer_bottom);
+    float d_inner_top = source_color_distance_sqrt(s_target, s_inner_top);
+    float d_inner_centre = source_color_distance_sqrt(s_target, s_inner_centre);
+    float d_inner_bottom = source_color_distance_sqrt(s_target, s_inner_bottom);
 
     float w_outer_top = source_edge_neighbour_weight(
         d_outer_top, float2(0.0, -1.0), edge_normal, edge_activity);
@@ -1878,14 +1878,14 @@ float4 PS_SmoothH(float4 pos : SV_Position, float2 uv : TEXCOORD0) : SV_Target
         source_edge_frame(snw, sn, sne, swc, sc, sec, ssw, sso, sse,
                           edge_normal, edge_activity);
 
-        float d_nw = source_colour_distance_sqrt(sc, snw);
-        float d_n  = source_colour_distance_sqrt(sc, sn);
-        float d_ne = source_colour_distance_sqrt(sc, sne);
-        float d_w  = source_colour_distance_sqrt(sc, swc);
-        float d_e  = source_colour_distance_sqrt(sc, sec);
-        float d_sw = source_colour_distance_sqrt(sc, ssw);
-        float d_s  = source_colour_distance_sqrt(sc, sso);
-        float d_se = source_colour_distance_sqrt(sc, sse);
+        float d_nw = source_color_distance_sqrt(sc, snw);
+        float d_n  = source_color_distance_sqrt(sc, sn);
+        float d_ne = source_color_distance_sqrt(sc, sne);
+        float d_w  = source_color_distance_sqrt(sc, swc);
+        float d_e  = source_color_distance_sqrt(sc, sec);
+        float d_sw = source_color_distance_sqrt(sc, ssw);
+        float d_s  = source_color_distance_sqrt(sc, sso);
+        float d_se = source_color_distance_sqrt(sc, sse);
         float local_detail = max(max(max(d_nw, d_n), max(d_ne, d_w)),
                                  max(max(d_e, d_sw), max(d_s, d_se)));
         float contrast_detail = smoothstep(0.025, 0.16, local_detail);
@@ -1945,11 +1945,11 @@ float4 PS_SmoothH(float4 pos : SV_Position, float2 uv : TEXCOORD0) : SV_Target
         float2 uv_right = uv + offset_uv;
         uv_left.x = clamp(uv_left.x, viewport_uv_min.x, viewport_uv_max.x);
         uv_right.x = clamp(uv_right.x, viewport_uv_min.x, viewport_uv_max.x);
-        float3 subpixel_colour = 0.5 * (
+        float3 subpixel_color = 0.5 * (
             tex2D(sAccumFrame, uv_left).rgb + tex2D(sAccumFrame, uv_right).rgb);
         if (pixel_smoothing_mode == 2)
-            subpixel_colour = lerp(subpixel_colour, adaptive_centre, 0.5);
-        return float4(subpixel_colour, detail_confidence);
+            subpixel_color = lerp(subpixel_color, adaptive_centre, 0.5);
+        return float4(subpixel_color, detail_confidence);
     }
 
     float maximum_sigma = base_sigma * (1.0 + HORIZONTAL_CURRENT_EXPANSION);
@@ -1982,28 +1982,28 @@ float4 PS_SmoothH(float4 pos : SV_Position, float2 uv : TEXCOORD0) : SV_Target
     for (int tap = -support; tap <= support; ++tap)
     {
         int source_cell_index = centre_cell.x + tap;
-        float3 raw_source_colour;
+        float3 raw_source_color;
         if (tap == 0)
-            raw_source_colour = centre;
+            raw_source_color = centre;
         else if (tap == -1 && horizontal_neighbours_cached)
-            raw_source_colour = cached_horizontal_left;
+            raw_source_color = cached_horizontal_left;
         else if (tap == 1 && horizontal_neighbours_cached)
-            raw_source_colour = cached_horizontal_right;
+            raw_source_color = cached_horizontal_right;
         else
-            raw_source_colour = sample_accum_source_cell(
+            raw_source_color = sample_accum_source_cell(
                 int2(source_cell_index, centre_cell.y), viewport_offset,
                 sample_size, sample_count, viewport_size);
         // Spot width follows the original source cell's three gun drives;
-        // adaptive pixel blending changes reconstruction colour, not current.
-        float3 source_colour = (tap == 0) ? adaptive_centre : raw_source_colour;
+        // adaptive pixel blending changes reconstruction color, not current.
+        float3 source_color = (tap == 0) ? adaptive_centre : raw_source_color;
         if (use_edge_aware_smoothing && adjacent_tap_edge_blending)
         {
             if (tap == -1)
-                source_colour = adaptive_horizontal_left;
+                source_color = adaptive_horizontal_left;
             else if (tap == 1)
-                source_colour = adaptive_horizontal_right;
+                source_color = adaptive_horizontal_right;
         }
-        float3 current = saturate(raw_source_colour / 1.25);
+        float3 current = saturate(raw_source_color / 1.25);
         float3 sigma = base_sigma * (1.0 + HORIZONTAL_CURRENT_EXPANSION * current);
         float3 weight;
         if (use_subpixel_smoothing)
@@ -2028,7 +2028,7 @@ float4 PS_SmoothH(float4 pos : SV_Position, float2 uv : TEXCOORD0) : SV_Target
                 source_coordinate.x, (float)source_cell_index, sigma, PX_BEAM_SPOT_PROFILE,
                 reconstruction_scale.x);
         }
-        reconstructed += source_colour * weight;
+        reconstructed += source_color * weight;
     }
 
     return float4(reconstructed, detail_confidence);
@@ -2190,7 +2190,7 @@ float3 evaluate_phosphor_mask_sample(float2 pixel, float pitch, float stripe_wid
 
     if (mask_type == 1)
     {
-        // Slot mask: stagger alternate rows and interrupt each vertical colour slot with a
+        // Slot mask: stagger alternate rows and interrupt each vertical color slot with a
         // horizontal opaque gap. This is an illustrative slot-mask geometry, not a tube-specific
         // mask pitch calibration.
         slot_height = saturate(slot_height);
@@ -2403,7 +2403,7 @@ float3 build_phosphor_mask(float2 uv, float2 screen_size)
     {
         // Keep the RGB triplet period at or above three output pixels. Below that
         // limit a grille becomes spatially undersampled and aliases into false
-        // colour/brightness patterns. Scale against the active viewport, not bars.
+        // color/brightness patterns. Scale against the active viewport, not bars.
         pitch = max(mask_pitch, 1.5) * (viewport_size.y / 1080.0);
         pitch = max(pitch, 3.0);
         pixel.x -= viewport_offset.x;
@@ -2515,7 +2515,7 @@ float aperture_damper_transmission(float2 output_pixel_position)
 // G 0.310/0.595, B 0.155/0.070) as a reference proxy, not measured Toshiba tube data. The Balanced Color
 // take uses D65, preserving the existing Toshiba reference transform. The Warm take uses CIE D55
 // (xy=0.33242, 0.34743) as an explicitly aesthetic, warmer white-point interpretation; this is
-// not a measured AF/Cinema setting or a claim about its factory colour temperature. The aggregate
+// not a measured AF/Cinema setting or a claim about its factory color temperature. The aggregate
 // Japanese P22 estimates are from libretro's grade.slang reference, not a Sony-specific calibration.
 float3 apply_display_color_profile(float3 rgb)
 {
@@ -2583,7 +2583,7 @@ float3 apply_display_color_profile(float3 rgb)
     // calculated with the actual white produced by the existing Japanese Cool
     // P22 matrix blend (D65 toward estimated NTSC-J at 71%). This deliberately
     // gives the EBU phosphors the same cool neutral character as Trinity's default;
-    // it is a hybrid reference profile, not a factory BVM-D24 colour-temperature
+    // it is a hybrid reference profile, not a factory BVM-D24 color-temperature
     // preset or a measured individual monitor calibration.
     if (display_profile == 2)
     {
@@ -2806,7 +2806,7 @@ float2 grain_source_uv(float2 output_uv, float2 screen_uv)
 
 // Read the source-raster detail confidence captured during the adaptive 3x3
 // analysis, before CRT masks/scanlines are applied. It protects isolated dots,
-// irregular texture, luminance edges and equal-luminance colour boundaries.
+// irregular texture, luminance edges and equal-luminance color boundaries.
 float grain_detail_factor(float2 source_uv)
 {
     if (noise_detail_protection <= 0.0001 ||
@@ -2956,7 +2956,7 @@ float4 PS_RenderCRTScene(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
             beam_max_sigma, PX_BEAM_SPOT_PROFILE);
         int beam_line_support = clamp(
             (int)ceil(beam_support_radius + 0.5 * beam_pixel_height + 0.5), 1, 8);
-        float3 beam_colour_sum = float3(0.0, 0.0, 0.0);
+        float3 beam_color_sum = float3(0.0, 0.0, 0.0);
         float3 beam_weight_sum = float3(0.0, 0.0, 0.0);
         [loop]
         for (int line_tap = -8; line_tap <= 8; ++line_tap)
@@ -3050,19 +3050,19 @@ float4 PS_RenderCRTScene(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
                     float weight_g = raw_g / max(mean_g, 0.001) * line_mask_g;
                     float weight_b = raw_b / max(mean_b, 0.001) * line_mask_b;
 
-                    beam_colour_sum.r += line_r.r * weight_r;
-                    beam_colour_sum.g += line_g.g * weight_g;
-                    beam_colour_sum.b += line_b.b * weight_b;
+                    beam_color_sum.r += line_r.r * weight_r;
+                    beam_color_sum.g += line_g.g * weight_g;
+                    beam_color_sum.b += line_b.b * weight_b;
                     beam_weight_sum += float3(weight_r, weight_g, weight_b);
                 }
             }
         }
 
-        // Normalize the weighted source colour so chromatic line reconstruction is
+        // Normalize the weighted source color so chromatic line reconstruction is
         // preserved, while the independent accumulated beam factor retains the
         // spatial scanline profile. Each truncated source-line kernel has unit area.
         float amount = saturate(PX_SCANLINE_STRENGTH / 2.0);
-        float3 reconstructed_source_colour = beam_colour_sum
+        float3 reconstructed_source_color = beam_color_sum
             / max(beam_weight_sum, float3(0.0001, 0.0001, 0.0001));
         float3 beam_channel_factor = pow(
             saturate(beam_weight_sum * PX_BEAM_AVERAGE_DRIVE), float3(0.9, 0.9, 0.9));
@@ -3073,16 +3073,16 @@ float4 PS_RenderCRTScene(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
 
         if (PX_PER_SOURCE_LINE_ATTENUATION_STAGE == 0)
         {
-            // Existing behaviour: source-line RGB colour reconstruction and its
+            // Existing behaviour: source-line RGB color reconstruction and its
             // per-channel beam attenuation both enter before ghosting/mask/profile.
-            float3 beam_output = reconstructed_source_colour * beam_channel_factor;
+            float3 beam_output = reconstructed_source_color * beam_channel_factor;
             col = lerp(col, beam_output, amount);
         }
         else
         {
-            // Alternative: reconstruct the source colour here, but defer the
+            // Alternative: reconstruct the source color here, but defer the
             // per-channel beam attenuation until the Shared Beam display stage.
-            col = lerp(col, reconstructed_source_colour, amount);
+            col = lerp(col, reconstructed_source_color, amount);
         }
     }
 
@@ -3610,7 +3610,7 @@ float3 sample_crt_surface(sampler source_sampler, float2 centre_uv,
     int maximum_taps = (geometry_antialiasing == 1) ? 4 : 8;
     int tap_count = (int)clamp(ceil(major_length), 1.0, (float)maximum_taps);
     float inverse_taps = 1.0 / (float)tap_count;
-    float3 colour_sum = float3(0.0, 0.0, 0.0);
+    float3 color_sum = float3(0.0, 0.0, 0.0);
     float scanline_sum = 0.0;
     float coverage_sum = 0.0;
 
@@ -3627,7 +3627,7 @@ float3 sample_crt_surface(sampler source_sampler, float2 centre_uv,
             if (tap_coverage > 0.00001)
             {
                 float4 tap_sample = tex2D(source_sampler, saturate(tap_uv));
-                colour_sum += tap_sample.rgb * tap_coverage;
+                color_sum += tap_sample.rgb * tap_coverage;
                 scanline_sum += tap_sample.a * tap_coverage;
                 coverage_sum += tap_coverage;
             }
@@ -3639,14 +3639,14 @@ float3 sample_crt_surface(sampler source_sampler, float2 centre_uv,
         ? saturate(scanline_sum / coverage_sum)
         : 0.0;
     return (coverage_sum > 0.00001)
-        ? (colour_sum / coverage_sum)
+        ? (color_sum / coverage_sum)
         : float3(0.0, 0.0, 0.0);
 }
 
-// Selective warm-colour saturation trim. Hue selection is evaluated in an approximate
+// Selective warm-color saturation trim. Hue selection is evaluated in an approximate
 // display-referred RGB view (2.2 power) so the degree slider behaves more like the visible
-// screenshot colours. The actual desaturation is applied in linear RGB toward an equal-luma
-// neutral, preserving Rec.709 luminance. This selects colours, not objects or screen regions.
+// screenshot colors. The actual desaturation is applied in linear RGB toward an equal-luma
+// neutral, preserving Rec.709 luminance. This selects colors, not objects or screen regions.
 float3 apply_selective_warm_desaturation(float3 linear_rgb)
 {
     if (!enable_selective_warm_desaturation || selective_warm_saturation_reduction <= 0.00001)
@@ -3784,13 +3784,13 @@ float4 PS_CompositeBloom(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
         float chroma = saturate(noise_chroma);
         if (noise_color_awareness > 0.0001)
         {
-            // Near-neutral pixels receive mostly monochromatic grain; moderate colour keeps
+            // Near-neutral pixels receive mostly monochromatic grain; moderate color keeps
             // chroma, while highly saturated details receive a gentler independent-RGB component.
-            float3 colour_for_noise = max(col, float3(0.0, 0.0, 0.0));
-            float colour_max = max(colour_for_noise.r, max(colour_for_noise.g, colour_for_noise.b));
-            float colour_min = min(colour_for_noise.r, min(colour_for_noise.g, colour_for_noise.b));
-            float image_saturation = (colour_max > 0.0001)
-                ? (colour_max - colour_min) / colour_max : 0.0;
+            float3 color_for_noise = max(col, float3(0.0, 0.0, 0.0));
+            float color_max = max(color_for_noise.r, max(color_for_noise.g, color_for_noise.b));
+            float color_min = min(color_for_noise.r, min(color_for_noise.g, color_for_noise.b));
+            float image_saturation = (color_max > 0.0001)
+                ? (color_max - color_min) / color_max : 0.0;
             float chroma_activity = smoothstep(0.025, 0.24, image_saturation);
             float saturated_detail_guard = 1.0 - 0.5 * smoothstep(0.72, 0.95, image_saturation);
             float image_chroma_factor = chroma_activity * saturated_detail_guard;
@@ -3806,7 +3806,7 @@ float4 PS_CompositeBloom(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
         }
         else if (chroma >= 0.9999)
         {
-            // Fully coloured grain evaluates only the three independent channels.
+            // Fully colored grain evaluates only the three independent channels.
             grain_values = float3(
                 aligned_grain_value(grain_position, native_position, grain_frame, 1u),
                 aligned_grain_value(grain_position, native_position, grain_frame, 2u),
