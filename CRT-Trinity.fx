@@ -178,7 +178,16 @@ uniform float black_level <
 // SOURCE IMAGE FILTERING ---------------------------------------------------------
 
 // These controls filter the accumulated source image before the CRT beam treatment.
-// Pixel Smoothing performs restrained edge-aware reconstruction on the finest available source grid.
+// Pixel Smoothing can use Edge-Aware reconstruction, symmetric Subpixel Blend, or both.
+// Subpixel Blend is the saved default.
+uniform int pixel_smoothing_mode <
+    ui_type = "combo";
+    ui_items = "Edge-Aware\0Subpixel Blend\0Hybrid\0";
+    ui_label = "Pixel Smoothing Mode";
+    ui_category = "Source Image Filtering";
+    ui_tooltip = "Edge-Aware uses the current adaptive source-grid reconstruction. Subpixel Blend applies symmetric half-offset sampling on both axes and is the saved default. Hybrid combines edge-aware source reconstruction with the subpixel blend.";
+> = 1;
+
 uniform float pixel_smoothing <
     ui_type = "drag";
     ui_min = 0.0;
@@ -186,8 +195,15 @@ uniform float pixel_smoothing <
     ui_step = 0.01;
     ui_label = "Pixel Smoothing";
     ui_category = "Source Image Filtering";
-    ui_tooltip = "Controls restrained, edge-aware blending of source samples. Uses DuckStation’s internal render grid when available, preserving enhanced-resolution 3D detail while repeated native-resolution sprite pixels remain intact. Similar colours can blend more freely; coherent boundaries are protected across their edge direction. This is image reconstruction, separate from the CRT beam spot. 0 disables adaptive blending.";
+    ui_tooltip = "Controls the strength of the selected Pixel Smoothing Mode. Edge-Aware blends source samples while protecting coherent edges; Subpixel Blend applies symmetric half-offset sampling; Hybrid combines both. Uses DuckStation’s internal render grid when available. This is source reconstruction, separate from the CRT beam spot. 0 disables Pixel Smoothing in every mode.";
 > = 0.35;
+
+uniform bool adjacent_tap_edge_blending <
+    ui_type = "boolean";
+    ui_label = "Adjacent-Tap Edge Blending";
+    ui_category = "Source Image Filtering";
+    ui_tooltip = "Experimental: applies a cached 2-column, 3-row edge-aware blend to the horizontal reconstruction taps immediately beside the centre tap. It can soften source-cell transition changes without additional texture fetches. Only affects Edge-Aware and Hybrid Pixel Smoothing modes; off preserves the existing reconstruction.";
+> = false;
 
 // Optional Gaussian source-pixel smoothing. These remain independent of Pixel Smoothing.
 uniform float source_smooth_h <
@@ -399,6 +415,14 @@ uniform int vertical_beam_model <
     ui_tooltip = "Shared Beam keeps the existing luminance-driven scanline modulation. Per-source-line RGB samples each selected beam-line centre independently and derives channel-specific current and beam widths. It respects native/manual/stock pitch, rolling scanlines and field phase. Sine always retains its existing waveform.";
 > = 0;
 
+uniform int per_source_line_attenuation_stage <
+    ui_type = "combo";
+    ui_items = "Source-Domain\0Post-Display (Shared Beam-aligned)\0";
+    ui_label = "Per-source-line RGB Attenuation";
+    ui_category = "Scanlines & Beam";
+    ui_tooltip = "Only affects Per-source-line RGB with Gaussian Beam selected. Source-Domain (default) retains the original early RGB beam attenuation. Post-Display reconstructs the source colour first, then applies its channel-specific beam factor after the display colour/contrast/vignette stages, alongside Shared Beam. The two modes change how ghosting and colour transforms interact with scanline depth.";
+> = 0;
+
 uniform float beam_horizontal_spot <
     ui_type = "drag";
     ui_min = 0.0;
@@ -482,6 +506,14 @@ uniform float vignette_strength <
     ui_category = "CRT Artifacts & Persistence";
 > = 0.8;
 
+uniform int vignette_mapping <
+    ui_type = "combo";
+    ui_items = "Legacy Fit\0Symmetric Viewport\0";
+    ui_label = "Vignette Mapping";
+    ui_category = "CRT Artifacts & Persistence";
+    ui_tooltip = "Symmetric Viewport (default) evaluates the vignette in normalized coordinates of DuckStation's active image viewport, giving matching falloff at all four image edges. Legacy Fit preserves the existing NewPixie-derived framing coordinates.";
+> = 1;
+
 uniform float flicker_amount <
     ui_type = "drag";
     ui_min = 0.0;
@@ -559,6 +591,13 @@ uniform float noise_luminance_adaptation <
     ui_category = "Noise & Grain";
     ui_tooltip = "Controls how strongly grain is reduced in darker areas. 0 applies uniform grain; 1 strongly suppresses grain in shadows and midtones while keeping full strength at white.";
 > = 0.15;
+
+uniform bool headroom_aware_grain <
+    ui_type = "boolean";
+    ui_label = "Headroom-Aware Grain";
+    ui_category = "Noise & Grain";
+    ui_tooltip = "Scales each grain excursion symmetrically to the available distance from black and white before adding it. This prevents one-sided clipping at the SDR output limits and reduces grain near the extremes. Off preserves the existing grain response.";
+> = false;
 
 uniform float noise_chroma <
     ui_type = "drag";
@@ -887,17 +926,22 @@ uniform bool field_phase_flicker <
     ui_type = "boolean";
     ui_label = "Field-Phase Flicker";
     ui_category = "Experimental";
-    ui_tooltip = "Overrides every Scanlines & Beam setting while enabled. Uses that section's defaults, except it forces Per-source-line RGB, disables Rolling Scanlines, and enables Alternating Field Phase. Changes to Scanlines & Beam are ignored until this is disabled.";
+    ui_tooltip = "Overrides every Scanlines & Beam setting while enabled. Uses that section's saved defaults, but forces Gaussian Beam with Per-source-line RGB, Post-Display (Shared Beam-aligned) attenuation, Rolling Scanlines off and Alternating Field Phase on. FCount parity switches the phase between 0 and π on successive rendered frames—a half-period shift that redistributes neighbouring source-line beam contributions. This creates a pronounced CRT-like flicker that can look like a very fast top-to-bottom flicker. The whole pattern changes phase globally; it is not a physical beam sweep or true 480i. Other image settings affect its appearance, not its timing. Experiment with it in motion and consider viewing comfort: it may cause eye strain or dizziness. Off by default.";
 > = false;
 
 uniform int field_phase_flicker_help <
     ui_label = " ";
-    ui_text = "Overrides every Scanlines & Beam setting while enabled. Uses that section's defaults, except it forces Per-source-line RGB, disables Rolling Scanlines, and enables Alternating Field Phase. Changes to Scanlines & Beam are ignored until this is disabled.";
+    ui_text = "Overrides every Scanlines & Beam setting while enabled. Uses that section's saved defaults, but forces Gaussian Beam with Per-source-line RGB, Post-Display (Shared Beam-aligned) attenuation, Rolling Scanlines off and Alternating Field Phase on. FCount parity switches the phase between 0 and π on successive rendered frames—a half-period shift that redistributes neighbouring source-line beam contributions. This creates a pronounced CRT-like flicker that can look like a very fast top-to-bottom flicker. The whole pattern changes phase globally; it is not a physical beam sweep or true 480i. Other image settings affect its appearance, not its timing. Experiment with it in motion and consider viewing comfort: it may cause eye strain or dizziness. Off by default.";
     ui_category = "Experimental";
 > = 0;
 
 // The experimental mode deliberately pins every Scanlines & Beam parameter to its
-// current UI default, then applies its three requested overrides. The UI uniforms
+// current UI default, then applies its explicit beam/phase overrides. Alternating Field
+// Phase switches FCount parity between 0 and PI on successive rendered frames; in the
+// Per-source-line RGB model this is a half-period displacement of the Gaussian beam
+// pattern, redistributing neighbouring source-line contributions and producing the
+// rapid CRT-like flicker described in the UI. This is a global phase alternation, not a
+// physical top-to-bottom beam sweep or true 480i field reconstruction. The UI uniforms
 // remain untouched so users' selected values take effect again when the mode is off.
 #define PX_SCANLINES_ENABLED          (field_phase_flicker ? true  : scanlines_enabled)
 #define PX_SCANLINE_PROFILE            (field_phase_flicker ? 1     : scanline_profile)
@@ -909,6 +953,7 @@ uniform int field_phase_flicker_help <
 #define PX_HORIZONTAL_SPOT_TAIL_ENERGY (field_phase_flicker ? 2.0   : horizontal_spot_tail_energy)
 #define PX_HORIZONTAL_SPOT_TAIL_WIDTH  (field_phase_flicker ? 2.0   : horizontal_spot_tail_width)
 #define PX_VERTICAL_BEAM_MODEL         (field_phase_flicker ? 1     : vertical_beam_model)
+#define PX_PER_SOURCE_LINE_ATTENUATION_STAGE (field_phase_flicker ? 1 : per_source_line_attenuation_stage)
 #define PX_BEAM_HORIZONTAL_SPOT        (field_phase_flicker ? 0.15  : beam_horizontal_spot)
 #define PX_BEAM_CURRENT_RESPONSE       (field_phase_flicker ? 0.50  : beam_current_response)
 #define PX_BEAM_AVERAGE_DRIVE          (field_phase_flicker ? 0.15  : beam_average_drive)
@@ -1481,6 +1526,100 @@ float3 source_edge_aware_pixel_blend(
     return lerp(centre, filtered, saturate(blend_amount));
 }
 
+// Adjacent horizontal reconstruction taps have only one cached column on their
+// outside edge. This two-column / three-row variant builds a local tensor from the
+// two overlapping 2x2 quadrants and uses the six cached source samples. It is a
+// bounded approximation to the full 3x3 centre filter, not an identical 3x3 solve.
+void source_edge_frame_two_columns(
+    float3 outer_top, float3 target, float3 outer_bottom,
+    float3 inner_top, float3 inner_centre, float3 inner_bottom,
+    float inner_direction_x,
+    out float2 edge_normal, out float edge_activity)
+{
+    // The adjacent tap may lie on either side of the central column. Orient the
+    // horizontal derivatives consistently in output-image X before forming Jxy.
+    float3 gx_top = 0.5 * ((inner_top - outer_top) + (inner_centre - target))
+        * inner_direction_x;
+    float3 gy_top = 0.5 * ((target - outer_top) + (inner_centre - inner_top));
+    float3 gx_bottom = 0.5 * ((inner_centre - target) + (inner_bottom - outer_bottom))
+        * inner_direction_x;
+    float3 gy_bottom = 0.5 * ((outer_bottom - target) + (inner_bottom - inner_centre));
+
+    float jxx = 0.5 * (dot(gx_top, gx_top) + dot(gx_bottom, gx_bottom));
+    float jyy = 0.5 * (dot(gy_top, gy_top) + dot(gy_bottom, gy_bottom));
+    float jxy = 0.5 * (dot(gx_top, gy_top) + dot(gx_bottom, gy_bottom));
+    float trace = jxx + jyy;
+    float discriminant = sqrt(max((jxx - jyy) * (jxx - jyy)
+                                + 4.0 * jxy * jxy, 0.0));
+    float coherence = saturate(discriminant / max(trace, 1e-8));
+    float edge_magnitude = sqrt(max(trace, 0.0));
+    float dominant_eigenvalue = 0.5 * (trace + discriminant);
+    float2 eigenvector = (jxx >= jyy)
+        ? float2(dominant_eigenvalue - jyy, jxy)
+        : float2(jxy, dominant_eigenvalue - jxx);
+    float eigenvector_length_sq = dot(eigenvector, eigenvector);
+    bool orientation_exists = trace > 1e-8
+        && discriminant > max(trace * 1e-5, 1e-10)
+        && eigenvector_length_sq > 1e-16;
+    edge_normal = orientation_exists
+        ? eigenvector * rsqrt(max(eigenvector_length_sq, 1e-16))
+        : float2(1.0, 0.0);
+
+    float contrast_confidence = smoothstep(0.025, 0.20, edge_magnitude);
+    float orientation_confidence = smoothstep(0.15, 0.60, coherence);
+    edge_activity = contrast_confidence * orientation_confidence;
+}
+
+float3 source_edge_aware_adjacent_pixel_blend(
+    float3 outer_top, float3 target, float3 outer_bottom,
+    float3 inner_top, float3 inner_centre, float3 inner_bottom,
+    float inner_direction_x)
+{
+    float3 s_outer_top = source_sqrt_rgb(outer_top);
+    float3 s_target = source_sqrt_rgb(target);
+    float3 s_outer_bottom = source_sqrt_rgb(outer_bottom);
+    float3 s_inner_top = source_sqrt_rgb(inner_top);
+    float3 s_inner_centre = source_sqrt_rgb(inner_centre);
+    float3 s_inner_bottom = source_sqrt_rgb(inner_bottom);
+
+    float2 edge_normal;
+    float edge_activity;
+    source_edge_frame_two_columns(
+        s_outer_top, s_target, s_outer_bottom,
+        s_inner_top, s_inner_centre, s_inner_bottom,
+        inner_direction_x, edge_normal, edge_activity);
+
+    float d_outer_top = source_colour_distance_sqrt(s_target, s_outer_top);
+    float d_outer_bottom = source_colour_distance_sqrt(s_target, s_outer_bottom);
+    float d_inner_top = source_colour_distance_sqrt(s_target, s_inner_top);
+    float d_inner_centre = source_colour_distance_sqrt(s_target, s_inner_centre);
+    float d_inner_bottom = source_colour_distance_sqrt(s_target, s_inner_bottom);
+
+    float w_outer_top = source_edge_neighbour_weight(
+        d_outer_top, float2(0.0, -1.0), edge_normal, edge_activity);
+    float w_outer_bottom = source_edge_neighbour_weight(
+        d_outer_bottom, float2(0.0, 1.0), edge_normal, edge_activity);
+    float w_inner_top = source_edge_neighbour_weight(
+        d_inner_top, float2(inner_direction_x, -1.0), edge_normal, edge_activity);
+    float w_inner_centre = source_edge_neighbour_weight(
+        d_inner_centre, float2(inner_direction_x, 0.0), edge_normal, edge_activity);
+    float w_inner_bottom = source_edge_neighbour_weight(
+        d_inner_bottom, float2(inner_direction_x, 1.0), edge_normal, edge_activity);
+
+    float3 filtered = target * 1.5
+        + outer_top * w_outer_top + outer_bottom * w_outer_bottom
+        + inner_top * w_inner_top + inner_centre * w_inner_centre
+        + inner_bottom * w_inner_bottom;
+    float weight_sum = 1.5 + w_outer_top + w_outer_bottom
+        + w_inner_top + w_inner_centre + w_inner_bottom;
+    filtered /= max(weight_sum, 1e-5);
+
+    float activity_scale = lerp(PIXEL_EDGE_BASELINE_FLOOR, 1.0,
+                                saturate(edge_activity));
+    float blend_amount = saturate(pixel_smoothing) * activity_scale;
+    return lerp(target, filtered, blend_amount);
+}
+
 float source_erf_approx(float x)
 {
     float ax = abs(x);
@@ -1639,12 +1778,19 @@ float4 PS_SmoothH(float4 pos : SV_Position, float2 uv : TEXCOORD0) : SV_Target
     float3 adaptive_centre = centre;
     float3 cached_horizontal_left = centre;
     float3 cached_horizontal_right = centre;
+    float3 adaptive_horizontal_left = centre;
+    float3 adaptive_horizontal_right = centre;
     bool horizontal_neighbours_cached = false;
     float detail_confidence = 0.0;
 
     // One 3x3 source-sample neighbourhood feeds both the adaptive pixel blend
     // and the grain-detail metadata. No second detail-analysis pass is needed.
-    if (pixel_smoothing > 0.0001 || noise_detail_protection > 0.0001)
+    bool use_edge_aware_smoothing = (pixel_smoothing_mode == 0 || pixel_smoothing_mode == 2)
+        && pixel_smoothing > 0.0001;
+    bool use_subpixel_smoothing = (pixel_smoothing_mode == 1 || pixel_smoothing_mode == 2)
+        && pixel_smoothing > 0.0001;
+
+    if (use_edge_aware_smoothing || noise_detail_protection > 0.0001)
     {
         float3 nw = sample_accum_source_cell(centre_cell + int2(-1, -1), viewport_offset, sample_size, sample_count, viewport_size);
         float3 n  = sample_accum_source_cell(centre_cell + int2( 0, -1), viewport_offset, sample_size, sample_count, viewport_size);
@@ -1690,7 +1836,7 @@ float4 PS_SmoothH(float4 pos : SV_Position, float2 uv : TEXCOORD0) : SV_Target
         // the tensor term also protects coherent edge structure.
         detail_confidence = max(contrast_detail, 0.75 * edge_activity);
 
-        if (pixel_smoothing > 0.0001)
+        if (use_edge_aware_smoothing)
         {
             float activity_scale = lerp(PIXEL_EDGE_BASELINE_FLOOR, 1.0,
                                          saturate(edge_activity));
@@ -1699,20 +1845,55 @@ float4 PS_SmoothH(float4 pos : SV_Position, float2 uv : TEXCOORD0) : SV_Target
                 nw, n, ne, w, centre, e, sw, so, se,
                 d_nw, d_n, d_ne, d_w, d_e, d_sw, d_s, d_se,
                 edge_normal, edge_activity, blend_amount);
+
+            // The neighbouring tap filters reuse the same cached 3x3 values. Each
+            // adjacent centre gets a two-column tensor/filter; no texture fetches
+            // are added. The asymmetric cached footprint is intentional and bounded.
+            if (adjacent_tap_edge_blending)
+            {
+                adaptive_horizontal_left = source_edge_aware_adjacent_pixel_blend(
+                    nw, w, sw, n, centre, so, 1.0);
+                adaptive_horizontal_right = source_edge_aware_adjacent_pixel_blend(
+                    ne, e, se, n, centre, so, -1.0);
+            }
         }
     }
 
-    // Box-convolved horizontal spot reconstruction. Pixel Smoothing is applied
-    // to the centre source sample; neighboring source-sample contributions remain
-    // unmodified, avoiding repeated 3x3 analysis for every horizontal tap.
+    // Box-convolved horizontal spot reconstruction. Edge-Aware/Hybrid modes apply
+    // their adaptive blend to the centre source cell; Subpixel Blend shifts the
+    // integrated kernel symmetrically. Neighbouring source cells do not repeat the
+    // 3x3 analysis for every horizontal tap.
     float spot_sigma_output = PX_BEAM_HORIZONTAL_SPOT * (ReShade::ScreenSize.y / 1080.0);
     float spot_sigma_source = spot_sigma_output / max(sample_size.x, 0.0001);
     float2 reconstruction_scale = source_reconstruction_scale_from_native();
     float source_smooth_sigma = source_smooth_h * reconstruction_scale.x;
     float base_sigma = sqrt(source_smooth_sigma * source_smooth_sigma
                           + spot_sigma_source * spot_sigma_source);
+    // The legacy Pixel Smoothing operation offsets the complete horizontal
+    // reconstruction by half the slider value in output-pixel units.
+    float subpixel_offset_source_x = use_subpixel_smoothing
+        ? (0.5 * saturate(pixel_smoothing) / max(sample_size.x, 0.0001)) : 0.0;
     if (base_sigma <= SOURCE_FILTER_EPSILON)
-        return float4(adaptive_centre, detail_confidence);
+    {
+        if (!use_subpixel_smoothing)
+            return float4(adaptive_centre, detail_confidence);
+
+        // With no horizontal Gaussian/beam width, reproduce the old two-sample
+        // output-pixel blend directly. Clamp to active viewport pixel centres so
+        // letterbox/viewport boundaries do not pull unrelated pixels inward.
+        float2 viewport_uv_min = (viewport_offset + 0.5) * ReShade::PixelSize.xy;
+        float2 viewport_uv_max = (viewport_offset + viewport_size - 0.5) * ReShade::PixelSize.xy;
+        float2 offset_uv = float2(0.5 * saturate(pixel_smoothing) * ReShade::PixelSize.x, 0.0);
+        float2 uv_left = uv - offset_uv;
+        float2 uv_right = uv + offset_uv;
+        uv_left.x = clamp(uv_left.x, viewport_uv_min.x, viewport_uv_max.x);
+        uv_right.x = clamp(uv_right.x, viewport_uv_min.x, viewport_uv_max.x);
+        float3 subpixel_colour = 0.5 * (
+            tex2D(sAccumFrame, uv_left).rgb + tex2D(sAccumFrame, uv_right).rgb);
+        if (pixel_smoothing_mode == 2)
+            subpixel_colour = lerp(subpixel_colour, adaptive_centre, 0.5);
+        return float4(subpixel_colour, detail_confidence);
+    }
 
     float maximum_sigma = base_sigma * (1.0 + HORIZONTAL_CURRENT_EXPANSION);
     float tail_energy = saturate(PX_HORIZONTAL_SPOT_TAIL_ENERGY * 0.01);
@@ -1734,7 +1915,8 @@ float4 PS_SmoothH(float4 pos : SV_Position, float2 uv : TEXCOORD0) : SV_Target
             ? max(6.0, 3.5 * tail_width * maximum_sigma / max(reconstruction_scale.x, 1e-5))
             : 5.0;
         int support_limit = (int)ceil(support_native_cells * reconstruction_scale.x);
-        support = clamp((int)ceil(3.5 * maximum_sigma * support_scale + 0.5),
+        support = clamp((int)ceil(3.5 * maximum_sigma * support_scale
+                                   + subpixel_offset_source_x + 0.5),
                         1, max(support_limit, 1));
     }
     float3 reconstructed = float3(0.0, 0.0, 0.0);
@@ -1757,11 +1939,38 @@ float4 PS_SmoothH(float4 pos : SV_Position, float2 uv : TEXCOORD0) : SV_Target
         // Spot width follows the original source cell's three gun drives;
         // adaptive pixel blending changes reconstruction colour, not current.
         float3 source_colour = (tap == 0) ? adaptive_centre : raw_source_colour;
+        if (use_edge_aware_smoothing && adjacent_tap_edge_blending)
+        {
+            if (tap == -1)
+                source_colour = adaptive_horizontal_left;
+            else if (tap == 1)
+                source_colour = adaptive_horizontal_right;
+        }
         float3 current = saturate(raw_source_colour / 1.25);
         float3 sigma = base_sigma * (1.0 + HORIZONTAL_CURRENT_EXPANSION * current);
-        float3 weight = source_profile_cell_weight3_structured(
-            source_coordinate.x, (float)source_cell_index, sigma, PX_BEAM_SPOT_PROFILE,
-            reconstruction_scale.x);
+        float3 weight;
+        if (use_subpixel_smoothing)
+        {
+            // Average the same integrated source-cell kernel at two symmetric
+            // output-pixel-relative positions. This is the legacy blend expressed
+            // on the internal/native source-cell grid, so enhanced rendering keeps
+            // its finer sampling lattice without changing the requested output-pixel offset.
+            float3 weight_left = source_profile_cell_weight3_structured(
+                source_coordinate.x - subpixel_offset_source_x,
+                (float)source_cell_index, sigma, PX_BEAM_SPOT_PROFILE,
+                reconstruction_scale.x);
+            float3 weight_right = source_profile_cell_weight3_structured(
+                source_coordinate.x + subpixel_offset_source_x,
+                (float)source_cell_index, sigma, PX_BEAM_SPOT_PROFILE,
+                reconstruction_scale.x);
+            weight = 0.5 * (weight_left + weight_right);
+        }
+        else
+        {
+            weight = source_profile_cell_weight3_structured(
+                source_coordinate.x, (float)source_cell_index, sigma, PX_BEAM_SPOT_PROFILE,
+                reconstruction_scale.x);
+        }
         reconstructed += source_colour * weight;
     }
 
@@ -1779,16 +1988,40 @@ float4 PS_SmoothV(float4 pos : SV_Position, float2 uv : TEXCOORD0) : SV_Target
 
     float2 reconstruction_scale = source_reconstruction_scale_from_native();
     float sigma = source_smooth_v * reconstruction_scale.y;
-    if (sigma <= SOURCE_FILTER_EPSILON)
+    bool use_subpixel_smoothing = (pixel_smoothing_mode == 1 || pixel_smoothing_mode == 2)
+        && pixel_smoothing > 0.0001;
+    if (sigma <= SOURCE_FILTER_EPSILON && !use_subpixel_smoothing)
         return tex2D(sSmoothH, uv);
 
     float2 sample_size = source_reconstruction_pixel_size_px();
+    if (sigma <= SOURCE_FILTER_EPSILON)
+    {
+        // With no vertical source Gaussian, the legacy mode is the original
+        // symmetric pair of linear samples, now applied to the H-pass result.
+        float2 viewport_uv_min = (viewport_offset + 0.5) * ReShade::PixelSize.xy;
+        float2 viewport_uv_max = (viewport_offset + viewport_size - 0.5) * ReShade::PixelSize.xy;
+        float offset_uv = 0.5 * saturate(pixel_smoothing) * ReShade::PixelSize.y;
+        float2 uv_top = uv;
+        float2 uv_bottom = uv;
+        uv_top.y = clamp(uv.y - offset_uv, viewport_uv_min.y, viewport_uv_max.y);
+        uv_bottom.y = clamp(uv.y + offset_uv, viewport_uv_min.y, viewport_uv_max.y);
+        float4 top_sample = tex2D(sSmoothH, uv_top);
+        float4 bottom_sample = tex2D(sSmoothH, uv_bottom);
+        float4 subpixel_result = 0.5 * (top_sample + bottom_sample);
+        if (pixel_smoothing_mode == 2)
+            subpixel_result.rgb = lerp(subpixel_result.rgb, tex2D(sSmoothH, uv).rgb, 0.5);
+        return subpixel_result;
+    }
+
     int2 sample_count = source_sample_pixel_count(viewport_size, sample_size);
     float sample_coordinate = (pos.y - viewport_offset.y) / sample_size.y - 0.5;
+    float subpixel_offset_source_y = use_subpixel_smoothing
+        ? (0.5 * saturate(pixel_smoothing) / max(sample_size.y, 0.0001)) : 0.0;
     int centre_line = (int)floor(sample_coordinate + 0.5);
     // The existing maximum of two native lines is expressed on the internal grid.
     int support_limit = max((int)ceil(2.0 * reconstruction_scale.y), 1);
-    int support = clamp((int)ceil(3.5 * sigma + 0.5), 1, support_limit);
+    int support = clamp((int)ceil(3.5 * sigma + subpixel_offset_source_y + 0.5),
+                        1, support_limit);
     float3 accumulated = float3(0.0, 0.0, 0.0);
     float detail_accumulated = 0.0;
 
@@ -1798,8 +2031,20 @@ float4 PS_SmoothV(float4 pos : SV_Position, float2 uv : TEXCOORD0) : SV_Target
     for (int tap = -support; tap <= support; ++tap)
     {
         int source_line = centre_line + tap;
-        float weight = gaussian_source_cell_weight(
-            sample_coordinate, (float)source_line, sigma);
+        float weight;
+        if (use_subpixel_smoothing)
+        {
+            float weight_top = gaussian_source_cell_weight(
+                sample_coordinate - subpixel_offset_source_y, (float)source_line, sigma);
+            float weight_bottom = gaussian_source_cell_weight(
+                sample_coordinate + subpixel_offset_source_y, (float)source_line, sigma);
+            weight = 0.5 * (weight_top + weight_bottom);
+        }
+        else
+        {
+            weight = gaussian_source_cell_weight(
+                sample_coordinate, (float)source_line, sigma);
+        }
         float2 line_centre = viewport_offset
             + (float2(0.0, (float)clamp(source_line, 0, sample_count.y - 1)) + 0.5)
                 * sample_size;
@@ -2566,12 +2811,12 @@ float4 PS_RenderCRTScene(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
     // Algebraically identical to the legacy two-step shaping below, reusing beam_luma.
     float i = 0.15 + 0.85 * beam_luma * beam_luma;
 
-    // The optional per-source-line model is reconstructed here, while the signal is
-    // still in the same linear source domain as sSmoothV. This keeps its sampled
-    // RGB contributions consistent with the later phosphor mask, display profile,
-    // contrast and vignette stages. The existing shared model remains in its original
-    // post-profile position below and is unchanged.
+    // The optional per-source-line model reconstructs native source lines here,
+    // while the signal is still in the linear source domain of sSmoothV. Its RGB
+    // beam attenuation can either remain here (Source-Domain) or be deferred to
+    // the late display stage (Post-Display). Shared Beam remains unchanged.
     float per_source_beam_scanline_factor = 1.0;
+    float3 per_source_beam_scanline_rgb_factor = float3(1.0, 1.0, 1.0);
     if (PX_SCANLINES_ENABLED && PX_SCANLINE_PROFILE != 0 && PX_VERTICAL_BEAM_MODEL == 1
         && PX_SCANLINE_STRENGTH > 0.0001)
     {
@@ -2584,6 +2829,10 @@ float4 PS_RenderCRTScene(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
             / max(source_native_pixel_size_uv().y, 0.000001);
         float beam_selected_line_cycles = beam_use_native_pitch
             ? beam_native_line_cycles : beam_tcy * PX_SCANLINE_LINES;
+        // Alternating Field Phase changes this global beam phase by PI on odd
+        // rendered frames. Dividing by 2*PI below makes that an exact half-cycle
+        // displacement of the Per-source-line RGB beam pattern. Source-line sample
+        // positions stay anchored; their beam weights are redistributed around them.
         float beam_frame_parity = mod((float)FCount, 2.0);
         float beam_field_phase = (PX_INTERLACE && beam_frame_parity > 0.5)
             ? 3.14159265359 : 0.0;
@@ -2595,6 +2844,8 @@ float4 PS_RenderCRTScene(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
             ? 0.5 : 0.75;
         float beam_line_shift = (beam_rolling_phase - beam_field_phase)
             / 6.28318530718;
+        // With rolling disabled, the alternating PI phase moves beam_coordinate
+        // by 0.5 line cycle on odd frames: this is the source of the rapid flicker.
         float beam_coordinate = beam_line_cycles - beam_phase_origin - beam_line_shift;
         float beam_pixel_height = max(abs(ddy(beam_line_cycles)), 0.00001);
         int beam_centre_line = (int)floor(beam_coordinate + 0.5);
@@ -2713,13 +2964,24 @@ float4 PS_RenderCRTScene(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
             / max(beam_weight_sum, float3(0.0001, 0.0001, 0.0001));
         float3 beam_channel_factor = pow(
             saturate(beam_weight_sum * PX_BEAM_AVERAGE_DRIVE), float3(0.9, 0.9, 0.9));
-        float3 beam_output = reconstructed_source_colour * beam_channel_factor;
-        col = lerp(col, beam_output, amount);
-
-        beam_channel_factor = lerp(
+        per_source_beam_scanline_rgb_factor = lerp(
             float3(1.0, 1.0, 1.0), beam_channel_factor, amount);
         per_source_beam_scanline_factor = dot(
-            beam_channel_factor, float3(0.2126, 0.7152, 0.0722));
+            per_source_beam_scanline_rgb_factor, float3(0.2126, 0.7152, 0.0722));
+
+        if (PX_PER_SOURCE_LINE_ATTENUATION_STAGE == 0)
+        {
+            // Existing behaviour: source-line RGB colour reconstruction and its
+            // per-channel beam attenuation both enter before ghosting/mask/profile.
+            float3 beam_output = reconstructed_source_colour * beam_channel_factor;
+            col = lerp(col, beam_output, amount);
+        }
+        else
+        {
+            // Alternative: reconstruct the source colour here, but defer the
+            // per-channel beam attenuation until the Shared Beam display stage.
+            col = lerp(col, reconstructed_source_colour, amount);
+        }
     }
 
     // Ghosting reads the already-linear separable blur buffer.
@@ -2808,9 +3070,19 @@ float4 PS_RenderCRTScene(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
     float lum_sat = max(dot(col, float3(0.2126, 0.7152, 0.0722)), 0.0);
     col = lerp(neutral_white * lum_sat, col, saturation);
 
-    // Preserve the intended 0.1 vignette floor near the flat image boundaries.
-    float vig = 0.1 + 16.0 * screen_uv.x * screen_uv.y
-        * (1.0 - screen_uv.x) * (1.0 - screen_uv.y);
+    // Legacy Fit preserves the retained NewPixie-derived framing. Symmetric Viewport
+    // evaluates the same vignette curve against the actual active image rectangle.
+    float2 vignette_uv = screen_uv;
+    if (vignette_mapping == 1)
+    {
+        float2 vignette_viewport_offset = source_viewport_offset_px();
+        float2 vignette_viewport_size = max(source_viewport_size_px(), float2(1.0, 1.0));
+        vignette_uv = saturate((pos.xy - vignette_viewport_offset) / vignette_viewport_size);
+    }
+
+    // Preserve the intended 0.1 vignette floor at the selected coordinate boundaries.
+    float vig = 0.1 + 16.0 * vignette_uv.x * vignette_uv.y
+        * (1.0 - vignette_uv.x) * (1.0 - vignette_uv.y);
     vig = 1.3 * sqrt(max(vig, 0.1));
     col *= lerp(1.0, vig, vignette_strength);
 
@@ -2847,9 +3119,13 @@ float4 PS_RenderCRTScene(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
         }
         else if (PX_VERTICAL_BEAM_MODEL == 1)
         {
-            // Its RGB source-line reconstruction was applied before the CRT colour
-            // pipeline so it receives the same phosphor/display transforms as the input.
+            // The source-line RGB reconstruction is prepared before the CRT colour
+            // pipeline. Post-Display mode defers only its channel-specific beam factor
+            // to this stage; Source-Domain already includes that factor in col.
+            // The scalar is retained in alpha for Halation Respects Scanlines.
             s = per_source_beam_scanline_factor;
+            if (PX_PER_SOURCE_LINE_ATTENUATION_STAGE == 1)
+                col *= per_source_beam_scanline_rgb_factor;
         }
         else
         {
@@ -3467,7 +3743,23 @@ float4 PS_CompositeBloom(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
         // Blend from uniform grain to a squared-luminance response. White retains full strength.
         float grain_luminance_scale = lerp(1.0, grain_luma * grain_luma,
                                            saturate(noise_luminance_adaptation));
-        col += grain * noise_amount * grain_luminance_scale * detail_scale;
+        float3 grain_delta = grain * noise_amount * grain_luminance_scale * detail_scale;
+        if (headroom_aware_grain)
+        {
+            // Bound each signed excursion by the smaller of the positive and
+            // negative headroom around the current channel value. Using abs(delta)
+            // makes the attenuation symmetric for positive/negative grain and
+            // prevents a one-sided SDR clamp from rectifying the noise near black
+            // or white. The actual generated excursion is used, so all normalized
+            // grain modes share the same safe path without a guessed global bound.
+            float3 symmetric_headroom = max(
+                float3(0.0, 0.0, 0.0), min(col, 1.0 - col));
+            float3 headroom_scale = min(
+                float3(1.0, 1.0, 1.0),
+                symmetric_headroom / max(abs(grain_delta), float3(1e-6, 1e-6, 1e-6)));
+            grain_delta *= headroom_scale;
+        }
+        col += grain_delta;
     }
 
     col *= 1.0 - flicker_amount
