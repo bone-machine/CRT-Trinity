@@ -8,13 +8,13 @@ The defaults are simply what I liked best: a cool, slightly blue-ish picture wit
 
 I mainly tuned the look while playing *Castlevania: Symphony of the Night* and *Metal Gear Solid* on PlayStation. **It's ready to use with [Castlevania: Symphony of the Night Ultimate](https://github.com/renanbianchi/sotn-ultimate).** The related [SotN decompilation project](https://github.com/Xeeynamo/sotn-decomp) is also a useful reference.
 
-## Main Techniques
+## Key Rendering Features
 
 - **Internal-resolution-aware reconstruction** — uses DuckStation's enhanced internal grid while keeping CRT raster pitch tied to native game dimensions.
 - **Subpixel Blend reconstruction (default)**, with optional **Edge-Aware** and **Hybrid** modes.
-- **Fixed Gaussian Beam scanlines and Gaussian spot kernel**, integrated over output-pixel footprints.
+- **Gaussian Beam scanlines and Gaussian spot kernel by default**, integrated over output-pixel footprints.
 - **Shared Beam and Per-source-line RGB** vertical beam models, with selectable Per-source-line RGB attenuation placement.
-- **Single Lobe horizontal spot reconstruction** — the horizontal spot shape is fixed rather than exposed as a selector.
+- **Integrated horizontal spot reconstruction** — the default is a Gaussian Single Lobe spot.
 - **Phosphor masks** — Aperture Grille, Slot Mask and Staggered Shadow Mask, with optional aperture-grille damping wires.
 - **Temporal bright-trail persistence** — previous-frame highlights can be retained; this is not conventional motion blur or calibrated phosphor decay.
 - **Halation and multi-pass bloom**, plus time-based grain, Field-Phase Flicker and interference effects.
@@ -52,7 +52,6 @@ The shader exposes the following controls in DuckStation.
 
 - **Pixel Smoothing Mode** — Subpixel Blend (default), Edge-Aware or Hybrid reconstruction.
 - **Pixel Smoothing** — strength of the selected reconstruction; `0` disables it.
-- **Adjacent-Tap Edge Blending** — optional cached edge-aware blending for the horizontal taps beside the centre tap. Only affects Edge-Aware and Hybrid; off by default.
 - **Horizontal Source-Pixel Smoothing** and **Vertical Source-Pixel Smoothing** — add horizontal and vertical Gaussian reconstruction width before CRT beam treatment.
 
 ### Screen Geometry
@@ -64,7 +63,7 @@ The shader exposes the following controls in DuckStation.
 
 ### Scanlines & Beam
 
-The beam shape is fixed: **Gaussian Beam** scanlines, a **Gaussian** spot kernel and a **Single Lobe** horizontal spot.
+The active beam defaults are **Gaussian Beam** scanlines, a **Gaussian** spot kernel and a **Single Lobe** horizontal spot.
 
 - **Scanline Strength** — overall scanline modulation. Set it to `0` to disable vertical beam modulation; phosphor masks and damping wires remain active.
 - **Vertical Beam Model** — Shared Beam or Per-source-line RGB.
@@ -80,7 +79,6 @@ The beam shape is fixed: **Gaussian Beam** scanlines, a **Gaussian** spot kernel
 
 - **Noise Amount** — grain intensity.
 - **Luminance Adaptation** — changes grain strength with image brightness.
-- **Headroom-Aware Grain** — on by default; symmetrically reduces grain excursions near black and white to avoid one-sided output clipping.
 - **Grain Animation Speed** — controls temporal evolution; `0` freezes it.
 - **Grain Size** — controls grain's spatial scale.
 - **Grain Alignment** — Output Pixels, Native Game Pixels or Mixed.
