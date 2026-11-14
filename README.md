@@ -1,10 +1,14 @@
 # CRT-Trinity
 
-CRT-Trinity is a **highly customizable CRT-inspired post-processing ReShade FX shader for DuckStation**, distributed as a single `.fx` file. It builds on Mattias Gustavsson's **NewPixie CRT**, with related adaptations and contributions credited below.
+CRT-Trinity is a **highly customizable Sony Trinitron-inspired CRT post-processing ReShade FX shader for DuckStation**, distributed as a single `.fx` file. It builds on Mattias Gustavsson’s NewPixie CRT, with related adaptations credited below.
 
-The primary design reference is the **Sony Trinitron aperture-grille CRT family**, with a Japanese P22-inspired default. Trinitron construction and behaviour inform the phosphor, beam, scanline and display treatment, but the shader uses real-time screen-space approximations rather than a complete physical CRT simulation. Other display profiles are colour/white-point options, not separate full emulations of the named televisions.
+The shader's overall design and rendering approach are based on selected characteristics of the **Sony Trinitron aperture-grille CRT family**, particularly its construction and operating behaviour, with a Japanese P22-inspired default. These characteristics guide the phosphor structure, beam and scanline behaviour, and overall display treatment. The shader recreates them selectively through real-time screen-space approximations rather than an exact physical simulation. Finishing effects such as grain, ghosting and bloom are aesthetic additions, not measured Trinitron traits.
 
-Defaults reflect the author's visual preference, not instrumented calibration. The main game references are *Castlevania: Symphony of the Night* and *Metal Gear Solid* for PlayStation.
+Other display profiles change the colour/white point and the default mask pairing. They are not separate television emulations.
+
+Defaults reflect the author's visual preference, not instrumented calibration. Start with the defaults; most users only need to adjust the display profile, scanline strength, source smoothing, grain and glow to taste.
+
+The main game references are *Castlevania: Symphony of the Night* and *Metal Gear Solid* for PlayStation.
 
 ## Main techniques
 
@@ -128,31 +132,6 @@ Used when Shadow Mask (Staggered Dots) is selected: **Mask Strength (Custom)**, 
 ### Diagnostics
 
 - **Debug View** — displays frame/history data, the mask, the pre-bloom CRT scene, or amplified Bloom extraction/blur buffers.
-
-## Saved starting defaults
-
-| Setting | Default |
-|---|---:|
-| Display Color Profile | Sony Trinitron — Japanese Cool |
-| CRT Surface Profile | Flat |
-| Geometry Reconstruction | Bilinear (1 tap) |
-| Pixel Smoothing | `0.35` |
-| Horizontal Source-Pixel Smoothing | `0.17` |
-| Vertical Source-Pixel Smoothing | `0.10` |
-| Scanline Beam Profile | Gaussian Beam |
-| Vertical Beam Model | Shared Beam |
-| Beam Spot Profile | Gaussian |
-| Horizontal Spot Structure | Single Lobe |
-| Horizontal Spot Tail Energy / Width | `2%` / `2×` |
-| Scanline Strength | `1.7` |
-| Alternating Field Phase | On |
-| Rolling Scanlines | On |
-| Noise Amount | `0.06` |
-| Detail Protection | `0.50` |
-| Image-Aware Chroma | `0.25` |
-| Bloom Intensity | `0.15` |
-
-Start with the defaults. Most users only need to adjust the display profile, scanline strength, source smoothing, grain and glow to taste.
 
 ## Game reference projects
 
