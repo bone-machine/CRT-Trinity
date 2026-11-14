@@ -30,10 +30,11 @@
 // Mainly judged with Castlevania: Symphony of the Night and Metal Gear Solid 1.
 //
 // Developed with AI-assisted research, implementation and iterative technical review.
-// The defaults are the author's preferred visual settings, selected by eye rather than
-// measured calibration. Flat geometry is the default. Most users should begin with
-// the defaults and make only a few high-level changes. See README.md for usage guidance
-// and AGENTS.md for the technical architecture.
+// The established profile and baseline settings reflect the author's visual direction,
+// selected by eye rather than measured calibration. This development branch deliberately
+// enables additional experimental rendering paths with provisional values for A/B testing;
+// these are not yet a settled release preset. Flat geometry remains the default. See README.md
+// for usage guidance and AGENTS.md for the technical architecture.
 // -----------------------------------------------------------------------------
 
 /*
@@ -61,11 +62,10 @@ float animation_frame_clock()
 // Locked values retained from the chosen baseline; intentionally not user-editable.
 #define japanese_whitepoint 71.0
 #define edge_feather 1.0
-#define enable_selective_warm_desaturation true
+// Fixed hue window; the enable switch and reduction amount are user-configurable below.
 #define selective_warm_hue_center 0.0
 #define selective_warm_hue_range 0.0
 #define selective_warm_hue_feather 50.0
-#define selective_warm_saturation_reduction 0.4
 
 // CRT-TRINITY -----------------------------------------------------------------
 
@@ -165,6 +165,30 @@ uniform float black_level <
     ui_tooltip = "Normalized input display-black reference used by the BT.1886-style EOTF. The filmic toe retains its saved 0.004 baseline and tracks changes to this control after the existing 1.25 input gain. 0.004 means 0.4% of reference white.";
 > = 0.004;
 
+uniform int highlight_gamut_mode <
+    ui_type = "combo";
+    ui_items = "Hue-Preserving (Legacy)\0Luminance-Preserving\0";
+    ui_label = "Highlight Gamut Handling";
+    ui_category = "Image & Color";
+    ui_tooltip = "When tone-mapped saturated highlights exceed the SDR RGB range, Hue-Preserving (Legacy) scales all channels down and can reduce luminance. Luminance-Preserving compresses chroma toward the neutral axis to retain the mapped luminance while fitting the output gamut.";
+> = 1;
+
+uniform bool warm_hue_desaturation <
+    ui_type = "boolean";
+    ui_label = "Warm Hue Desaturation";
+    ui_category = "Image & Color";
+    ui_tooltip = "Reduces saturation around red hues while preserving Rec.709 luminance. The fixed hue window feathers into neighbouring orange and magenta tones.";
+> = true;
+
+uniform float warm_desaturation_amount <
+    ui_type = "drag";
+    ui_min = 0.0;
+    ui_max = 0.4;
+    ui_step = 0.01;
+    ui_label = "Warm Desaturation Amount";
+    ui_category = "Image & Color";
+    ui_tooltip = "Maximum saturation reduction inside the warm-hue selection. 0 disables the adjustment; 0.4 preserves the previous fixed default.";
+> = 0.4;
 
 // These spatial finishing controls are grouped with the image-level adjustments.
 uniform float vignette_strength <
@@ -181,7 +205,15 @@ uniform int vignette_mapping <
     ui_items = "Legacy Fit\0Symmetric Viewport\0";
     ui_label = "Vignette Mapping";
     ui_category = "Image & Color";
-    ui_tooltip = "Symmetric Viewport (default) evaluates the vignette in normalized coordinates of DuckStation's active image viewport, giving matching falloff at all four image edges. Legacy Fit preserves the existing NewPixie-derived framing coordinates.";
+    ui_tooltip = "Symmetric Viewport evaluates falloff in DuckStation's active image viewport, giving matching falloff at all four image edges. Legacy Fit preserves the previous NewPixie-derived framing coordinates.";
+> = 1;
+
+uniform int vignette_normalization <
+    ui_type = "combo";
+    ui_items = "Legacy Center Gain\0Center-Normalized\0";
+    ui_label = "Vignette Normalization";
+    ui_category = "Image & Color";
+    ui_tooltip = "Center-Normalized keeps the vignette multiplier exactly 1.0 at the image centre and darkens only toward the edges. Legacy Center Gain preserves the previous centre-brightening response.";
 > = 1;
 
 uniform float fringe_amount <
@@ -517,8 +549,30 @@ uniform bool interlace <
     ui_type = "boolean";
     ui_label = "Alternating Field Phase";
     ui_category = "Scanlines & Beam";
-    ui_tooltip = "Alternates Gaussian beam phase on odd/even rendered frames. This is a procedural phase shift, not true 480i field reconstruction.";
+    ui_tooltip = "Alternates the vertical beam phase at half the selected 60 Hz or 50 Hz reference rate (30 or 25 Hz two-state cycle). Rate-Stable Elapsed Time keeps its real-time progression independent of render FPS; Legacy Frame Counter alternates on successive rendered frames. This is procedural modulation, not true 480i field reconstruction.";
 > = true;
+
+uniform int field_phase_timing <
+    ui_type = "combo";
+    ui_items = "Legacy Frame Counter\0Rate-Stable Elapsed Time\0";
+    ui_label = "Field Phase Timing";
+    ui_category = "Scanlines & Beam";
+    ui_tooltip = "Rate-Stable Elapsed Time (default) derives the alternating phase from elapsed time at the selected 60 Hz or 50 Hz reference rate, independent of render FPS. Legacy Frame Counter reproduces the previous FCount-parity behavior and ignores the reference-rate selector.";
+> = 1;
+
+uniform int field_phase_reference_rate <
+    ui_type = "combo";
+    ui_items = "60 Hz\0PAL 50 Hz\0";
+    ui_label = "Field Phase Reference Rate";
+    ui_category = "Scanlines & Beam";
+    ui_tooltip = "Sets only the Alternating Field Phase step rate: 60 Hz produces a 30 Hz two-state cycle; PAL 50 Hz produces a 25 Hz cycle. This does not change Rolling Scanlines. Used only by Rate-Stable Elapsed Time.";
+> = 0;
+
+uniform int temporal_phase_help <
+    ui_label = " ";
+    ui_text = "Comfort warning: Alternating Field Phase and Rolling Scanlines are enabled by default and can produce visible flicker. This may cause eye strain or dizziness in sensitive viewers; disable either or both effects if uncomfortable.";
+    ui_category = "Scanlines & Beam";
+> = 0;
 
 uniform bool scanroll <
     ui_type = "boolean";
@@ -527,7 +581,7 @@ uniform bool scanroll <
     ui_tooltip = "Continuously moves the Gaussian beam phase using elapsed time. Disable it to isolate Alternating Field Phase.";
 > = true;
 
-// 12 user-adjustable Scanlines & Beam settings. Hidden profile defaults are Gaussian Beam /
+// 14 user-adjustable Scanlines & Beam settings. Hidden profile defaults are Gaussian Beam /
 // Gaussian / Single Lobe; alternative implementations remain available in the source.
 
 // DuckStation supplies the active native raster dimensions and final viewport.
@@ -545,15 +599,53 @@ uniform float2 ViewportSize < source = "viewportsize"; >;
 // NOISE & GRAIN -----------------------------------------------------------------
 // Grain can follow output pixels or the native source raster, and can adapt to local detail/color.
 
+uniform int noise_placement <
+    ui_type = "combo";
+    ui_items = "Post-Tone-Map Grain\0Pre-Beam Signal Noise\0Hybrid (Both)\0";
+    ui_label = "Noise Placement";
+    ui_category = "Noise & Grain";
+    ui_tooltip = "Post-Tone-Map Grain preserves the former finishing-grain path. Pre-Beam Signal Noise adds a subtle animated signal variation after source reconstruction but before beam and phosphor-mask treatment. Hybrid combines both; this is the experimental default.";
+> = 2;
+
 uniform float noise_amount <
     ui_type = "drag";
     ui_min = 0.0;
     ui_max = 0.10;
     ui_step = 0.001;
-    ui_label = "Noise Amount";
+    ui_label = "Post-Tone-Map Grain Amount";
     ui_category = "Noise & Grain";
-    ui_tooltip = "Controls animated grain amplitude. Before final clipping, per-channel noise has a standard deviation of about 0.3 times this value. 0 disables grain.";
+    ui_tooltip = "Controls the existing animated finishing grain added after the filmic curve. Before final clipping, per-channel noise has a standard deviation of about 0.3 times this value.";
 > = 0.06;
+
+uniform float signal_noise_amount <
+    ui_type = "drag";
+    ui_min = 0.0;
+    ui_max = 0.10;
+    ui_step = 0.001;
+    ui_label = "Pre-Beam Signal Noise Amount";
+    ui_category = "Noise & Grain";
+    ui_tooltip = "Amplitude of the new linear-light noise added after vertical source reconstruction and before beam, scanline and phosphor-mask treatment. Its approximate per-channel standard deviation is 0.3 times this value.";
+> = 0.018;
+
+uniform float signal_noise_chroma <
+    ui_type = "drag";
+    ui_min = 0.0;
+    ui_max = 1.0;
+    ui_step = 0.05;
+    ui_label = "Signal Noise Chroma";
+    ui_category = "Noise & Grain";
+    ui_tooltip = "0 shares one neutral noise field across RGB; 1 uses independent channel noise. The default is restrained to avoid colored speckle dominating the source image.";
+> = 0.25;
+
+uniform float signal_noise_line_correlation <
+    ui_type = "drag";
+    ui_min = 0.0;
+    ui_max = 1.0;
+    ui_step = 0.05;
+    ui_label = "Signal Noise Line Correlation";
+    ui_category = "Noise & Grain";
+    ui_tooltip = "Blends native-pixel noise with a component shared along each native raster line. Higher values produce more horizontal correlation; 0 is spatially independent.";
+> = 0.25;
 
 uniform float noise_luminance_adaptation <
     ui_type = "drag";
@@ -722,6 +814,34 @@ uniform float halation_strength <
     ui_category = "Glow & Ghosting";
     ui_tooltip = "Adds glow from highlights emitted by the completed CRT phosphor image. Set to 0 to disable.";
 > = 0.15;
+
+uniform int halation_extraction_mode <
+    ui_type = "combo";
+    ui_items = "Normalized Luminance (Legacy)\0RGB-Preserving\0RGB-Preserving + Extended\0";
+    ui_label = "Halation Extraction";
+    ui_category = "Glow & Ghosting";
+    ui_tooltip = "Legacy reduces bright pixels to a normalized luminance mask. RGB-Preserving retains highlight hue. RGB-Preserving + Extended also lets linear highlights above 1.0 contribute with a soft logarithmic headroom response; this is the experimental default.";
+> = 2;
+
+uniform float halation_extended_gain <
+    ui_type = "drag";
+    ui_min = 0.0;
+    ui_max = 1.0;
+    ui_step = 0.05;
+    ui_label = "Extended Highlight Gain";
+    ui_category = "Glow & Ghosting";
+    ui_tooltip = "Controls the additional logarithmic contribution from halation-source luminance above 1.0. 0 disables extended headroom even in the extended extraction mode.";
+> = 0.35;
+
+uniform float halation_spread <
+    ui_type = "drag";
+    ui_min = 0.25;
+    ui_max = 3.0;
+    ui_step = 0.05;
+    ui_label = "Halation Spread";
+    ui_category = "Glow & Ghosting";
+    ui_tooltip = "Scales the halation-only horizontal and vertical blur radius without changing the shared source blur used by ghosting.";
+> = 1.25;
 
 uniform bool halation_respects_scanlines <
     ui_type = "boolean";
@@ -973,12 +1093,12 @@ uniform bool field_phase_flicker <
     ui_type = "boolean";
     ui_label = "Field-Phase Flicker";
     ui_category = "Experimental";
-    ui_tooltip = "Overrides every Scanlines & Beam setting while enabled. Uses that section's saved defaults, but forces Gaussian Beam with Per-source-line RGB, Post-Display (Shared Beam-aligned) attenuation, Rolling Scanlines off and Alternating Field Phase on. FCount parity switches the phase between 0 and π on successive rendered frames—a half-period shift that redistributes neighbouring source-line beam contributions. This creates a pronounced CRT-like flicker that can look like a very fast top-to-bottom flicker. The whole pattern changes phase globally; it is not a physical beam sweep or true 480i. Other image settings affect its appearance, not its timing. Experiment with it in motion and consider viewing comfort: it may cause eye strain or dizziness. Off by default.";
+    ui_tooltip = "Overrides the Scanlines & Beam model while enabled. It uses Gaussian Beam with Per-source-line RGB, Post-Display attenuation, Rolling Scanlines off and Alternating Field Phase on. Field Phase Timing selects a legacy rendered-frame clock or rate-stable elapsed-time clock; Field Phase Reference Rate selects its 60 Hz or PAL 50 Hz cadence. A half-period shift redistributes neighbouring source-line beam contributions and creates pronounced global flicker. This is not a physical beam sweep or true 480i. Experiment in motion; it may cause eye strain or dizziness. Off by default.";
 > = false;
 
 uniform int field_phase_flicker_help <
     ui_label = " ";
-    ui_text = "Enable for a very fast, pronounced CRT-like flicker. It may cause eye strain or dizziness; use at your discretion.";
+    ui_text = "Enable for a pronounced CRT-like flicker. It uses Per-source-line RGB and alternating half-period beam phases. Rate-Stable Elapsed Time keeps the phase rate fixed; Legacy Frame Counter follows rendered frames. It may cause eye strain or dizziness; use at your discretion.";
     ui_category = "Experimental";
 > = 0;
 
@@ -1002,6 +1122,20 @@ uniform int field_phase_flicker_help <
 #define PX_NATIVE_SCANLINE_PITCH       (field_phase_flicker ? false : native_scanline_pitch)
 #define PX_INTERLACE                   (field_phase_flicker ? true  : interlace)
 #define PX_SCANROLL                    (field_phase_flicker ? false : scanroll)
+
+// The rate-stable clock advances at 60 reference frames per second. At 60 FPS it
+// matches the legacy 0/PI sequence; at other render rates its real-time 30 Hz cycle
+// remains fixed instead of changing speed with FCount parity.
+float scanline_field_phase(float frame_clock)
+{
+    if (!PX_INTERLACE)
+        return 0.0;
+    float reference_scale = (field_phase_reference_rate == 1) ? (50.0 / 60.0) : 1.0;
+    float phase_clock = (field_phase_timing == 0)
+        ? (float)FCount
+        : frame_clock * reference_scale;
+    return mod(phase_clock, 2.0) * 3.14159265359;
+}
 
 // DIAGNOSTICS -------------------------------------------------------------------
 
@@ -1064,15 +1198,21 @@ float4 PrevColor(float4 pos : SV_Position, float2 uv : TEXCOORD0) : SV_Target
 
 float4 PS_AccumulateFrame(float4 pos : SV_Position, float2 uv : TEXCOORD0) : SV_Target
 {
-    float4 history = tex2D(sAccTex, uv.xy);
-    // Linear history includes the preserved 1.25 beam-drive gain, so valid RGB can reach 1.25.
-    // Values above 1.5 are outside this shader's SDR working range and are treated as stale/bad.
-    bool invalid_history = any(isnan(history)) || any(isinf(history)) ||
-        any(history < float4(0.0, 0.0, 0.0, 0.0)) ||
-        any(history > float4(1.5, 1.5, 1.5, 1.0));
-    history = invalid_history
-        ? float4(0.0, 0.0, 0.0, 0.0)
-        : history;
+    float4 history = float4(0.0, 0.0, 0.0, 0.0);
+    // With persistence disabled, history cannot contribute to the max operation. Avoid
+    // reading the full-resolution prior-frame texture in this common default state.
+    if (acc_modulate > 0.000001)
+    {
+        history = tex2D(sAccTex, uv.xy);
+        // Linear history includes the preserved 1.25 beam-drive gain, so valid RGB can reach 1.25.
+        // Values above 1.5 are outside this shader's SDR working range and are treated as stale/bad.
+        bool invalid_history = any(isnan(history)) || any(isinf(history)) ||
+            any(history < float4(0.0, 0.0, 0.0, 0.0)) ||
+            any(history > float4(1.5, 1.5, 1.5, 1.0));
+        history = invalid_history
+            ? float4(0.0, 0.0, 0.0, 0.0)
+            : history;
+    }
 
     // m_frame_count starts at 0 and DuckStation increments it at the start of Apply(), before
     // updating source uniforms. Therefore frame 1 is a reliable first-frame clear on a new shader.
@@ -2012,6 +2152,90 @@ float4 PS_SmoothH(float4 pos : SV_Position, float2 uv : TEXCOORD0) : SV_Target
     return float4(reconstructed, detail_confidence);
 }
 
+// Pre-beam signal-noise field. It is keyed to native source-pixel cells and interpolated
+// between 60 Hz reference frames. A second line-keyed field provides controllable horizontal
+// correlation without turning the whole image into a fixed scanline overlay.
+uint signal_noise_hash_u32(uint value)
+{
+    value ^= value >> 16;
+    value *= 0x7feb352du;
+    value ^= value >> 15;
+    value *= 0x846ca68bu;
+    value ^= value >> 16;
+    return value;
+}
+
+float signal_noise_hash_value(uint2 cell, uint frame, uint channel)
+{
+    uint value = cell.x * 0x9e3779b9u;
+    value ^= cell.y * 0x85ebca6bu;
+    value ^= frame * 0xc2b2ae35u;
+    value ^= channel * 0x27d4eb2fu;
+    return (float)(signal_noise_hash_u32(value) >> 8) * (1.0 / 16777216.0);
+}
+
+float animated_signal_noise_value(uint2 cell, float frame_clock, uint channel)
+{
+    float frame_floor = floor(frame_clock);
+    uint frame0 = (uint)frame_floor;
+    float fraction = frac(frame_clock);
+    float value0 = signal_noise_hash_value(cell, frame0, channel);
+    uint frame1 = frame0 + 1u;
+    if (frame1 >= 640u)
+        frame1 = 0u;
+    float value1 = signal_noise_hash_value(cell, frame1, channel);
+    float blend = fraction * fraction * (3.0 - 2.0 * fraction);
+    float mixed = lerp(value0, value1, blend);
+    float norm = rsqrt(max((1.0 - blend) * (1.0 - blend) + blend * blend, 0.000001));
+    return 0.5 + (mixed - 0.5) * norm;
+}
+
+float3 apply_prebeam_signal_noise(float3 source, float2 pixel_position)
+{
+    if ((noise_placement == 0) || signal_noise_amount <= 0.000001)
+        return source;
+
+    float2 viewport_offset = source_viewport_offset_px();
+    float2 native_pixel_size = max(source_native_pixel_size_px(), float2(0.0001, 0.0001));
+    int2 signed_cell = (int2)floor((pixel_position - viewport_offset) / native_pixel_size);
+    uint2 cell = (uint2)max(signed_cell, int2(0, 0));
+    float frame = mod(animation_frame_clock() * noise_animation_speed, 640.0);
+    float3 pixel_values = float3(
+        animated_signal_noise_value(cell, frame, 1u),
+        animated_signal_noise_value(cell, frame, 2u),
+        animated_signal_noise_value(cell, frame, 3u));
+    float mono_value = animated_signal_noise_value(cell, frame, 0u);
+    float3 random_values = lerp(mono_value.xxx, pixel_values, saturate(signal_noise_chroma));
+
+    float correlation = saturate(signal_noise_line_correlation);
+    if (correlation > 0.0001)
+    {
+        uint2 line_cell = uint2(0u, cell.y);
+        float3 line_values = float3(
+            animated_signal_noise_value(line_cell, frame, 17u),
+            animated_signal_noise_value(line_cell, frame, 18u),
+            animated_signal_noise_value(line_cell, frame, 19u));
+        float line_mono = animated_signal_noise_value(line_cell, frame, 16u);
+        line_values = lerp(line_mono.xxx, line_values, saturate(signal_noise_chroma));
+        random_values = lerp(random_values, line_values, correlation);
+        float norm = rsqrt(max((1.0 - correlation) * (1.0 - correlation)
+                             + correlation * correlation, 0.000001));
+        random_values = 0.5 + (random_values - 0.5) * norm;
+    }
+
+    float3 delta = (random_values - 0.5) * 1.03923048 * signal_noise_amount;
+    // The accumulated source domain includes the retained 1.25 gain. Keep the new
+    // signal perturbation symmetric around its available range instead of rectifying it.
+    if (headroom_aware_grain)
+    {
+        float3 headroom = max(float3(0.0, 0.0, 0.0), min(source, 1.25 - source));
+        float3 scale = min(float3(1.0, 1.0, 1.0),
+            headroom / max(abs(delta), float3(1e-6, 1e-6, 1e-6)));
+        delta *= scale;
+    }
+    return source + delta;
+}
+
 float4 PS_SmoothV(float4 pos : SV_Position, float2 uv : TEXCOORD0) : SV_Target
 {
     float2 viewport_offset = source_viewport_offset_px();
@@ -2026,7 +2250,11 @@ float4 PS_SmoothV(float4 pos : SV_Position, float2 uv : TEXCOORD0) : SV_Target
     bool use_subpixel_smoothing = (pixel_smoothing_mode == 1 || pixel_smoothing_mode == 2)
         && pixel_smoothing > 0.0001;
     if (sigma <= SOURCE_FILTER_EPSILON && !use_subpixel_smoothing)
-        return tex2D(sSmoothH, uv);
+    {
+        float4 passthrough = tex2D(sSmoothH, uv);
+        passthrough.rgb = apply_prebeam_signal_noise(passthrough.rgb, pos.xy);
+        return passthrough;
+    }
 
     float2 sample_size = source_reconstruction_pixel_size_px();
     if (sigma <= SOURCE_FILTER_EPSILON)
@@ -2045,6 +2273,7 @@ float4 PS_SmoothV(float4 pos : SV_Position, float2 uv : TEXCOORD0) : SV_Target
         float4 subpixel_result = 0.5 * (top_sample + bottom_sample);
         if (pixel_smoothing_mode == 2)
             subpixel_result.rgb = lerp(subpixel_result.rgb, tex2D(sSmoothH, uv).rgb, 0.5);
+        subpixel_result.rgb = apply_prebeam_signal_noise(subpixel_result.rgb, pos.xy);
         return subpixel_result;
     }
 
@@ -2091,6 +2320,7 @@ float4 PS_SmoothV(float4 pos : SV_Position, float2 uv : TEXCOORD0) : SV_Target
         detail_accumulated += source.a * weight;
     }
 
+    accumulated = apply_prebeam_signal_noise(accumulated, pos.xy);
     return float4(accumulated, saturate(detail_accumulated));
 }
 
@@ -2638,7 +2868,24 @@ float3 filmic(float3 linear_color)
     float3 mapped = source * scale;
     float peak = max(mapped.r, max(mapped.g, mapped.b));
     if (peak > 1.0)
-        mapped /= peak;
+    {
+        if (highlight_gamut_mode == 0)
+        {
+            // Legacy mode keeps hue/chromaticity by scaling the entire RGB vector,
+            // accepting a reduction in the tone-mapped luminance.
+            mapped /= peak;
+        }
+        else
+        {
+            // The luminance roll-off has already established mapped_y. Compress only
+            // chroma toward the equal-luminance neutral axis until the peak fits SDR.
+            // Since dot(mapped - mapped_y.xxx, Rec.709) is zero, this preserves Y.
+            float3 chroma = mapped - mapped_y.xxx;
+            float chroma_peak = max(chroma.r, max(chroma.g, chroma.b));
+            float chroma_scale = saturate((1.0 - mapped_y) / max(chroma_peak, 0.00001));
+            mapped = mapped_y.xxx + chroma * chroma_scale;
+        }
+    }
     return mapped;
 }
 
@@ -2661,7 +2908,15 @@ float vignette_multiplier(float2 legacy_screen_uv, float2 output_pixel_position)
     }
     float shape = 0.1 + 16.0 * vignette_uv.x * vignette_uv.y
         * (1.0 - vignette_uv.x) * (1.0 - vignette_uv.y);
-    return 1.3 * sqrt(max(shape, 0.1));
+    float vignette = 1.3 * sqrt(max(shape, 0.1));
+    if (vignette_normalization == 1)
+    {
+        // At the exact image centre, shape = 1.1. Normalize that peak to 1.0 so
+        // Vignette Strength controls edge attenuation without brightening the centre.
+        const float centre_gain = 1.3 * 1.04880884817;
+        vignette /= centre_gain;
+    }
+    return vignette;
 }
 
 // Integer avalanche hash for repeatable per-cell grain values.
@@ -2908,13 +3163,10 @@ float4 PS_RenderCRTScene(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
             / max(source_native_pixel_size_uv().y, 0.000001);
         float beam_selected_line_cycles = beam_use_native_pitch
             ? beam_native_line_cycles : beam_tcy * PX_SCANLINE_LINES;
-        // Alternating Field Phase changes this global beam phase by PI on odd
-        // rendered frames. Dividing by 2*PI below makes that an exact half-cycle
-        // displacement of the Per-source-line RGB beam pattern. Source-line sample
-        // positions stay anchored; their beam weights are redistributed around them.
-        float beam_frame_parity = mod((float)FCount, 2.0);
-        float beam_field_phase = (PX_INTERLACE && beam_frame_parity > 0.5)
-            ? 3.14159265359 : 0.0;
+        // Alternating Field Phase offsets this global beam phase by PI at the selected
+        // phase-clock cadence. Source-line sample positions stay anchored; their beam
+        // weights are redistributed around them.
+        float beam_field_phase = scanline_field_phase(frame_clock);
         float beam_rolling_phase = PX_SCANROLL
             ? mod(6.0 * frame_clock, 6.28318530718) : 0.0;
         float beam_line_cycles = (beam_use_native_pitch || beam_use_manual_pitch)
@@ -2924,7 +3176,7 @@ float4 PS_RenderCRTScene(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
         float beam_line_shift = (beam_rolling_phase - beam_field_phase)
             / 6.28318530718;
         // With rolling disabled, the alternating PI phase moves beam_coordinate
-        // by 0.5 line cycle on odd frames: this is the source of the rapid flicker.
+        // by half a line cycle per field-phase transition, producing rapid flicker.
         float beam_coordinate = beam_line_cycles - beam_phase_origin - beam_line_shift;
         float beam_pixel_height = max(abs(ddy(beam_line_cycles)), 0.00001);
         int beam_centre_line = (int)floor(beam_coordinate + 0.5);
@@ -3149,8 +3401,7 @@ float4 PS_RenderCRTScene(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
     float selected_line_cycles = use_native_pitch ? native_line_cycles : tcy * PX_SCANLINE_LINES;
     float lines_phase = selected_line_cycles * 6.28318530718 + 1.57079632679;
     float line_phase = (use_native_pitch || use_manual_pitch) ? lines_phase : stock_phase;
-    float frame_parity = mod((float)FCount, 2.0);
-    float field_phase = (PX_INTERLACE && frame_parity > 0.5) ? 3.14159265359 : 0.0;
+    float field_phase = scanline_field_phase(frame_clock);
     // 6 rad per 1/60-second reference frame; wrap on a full turn to avoid phase jumps.
     float rolling_phase = PX_SCANROLL ? mod(6.0 * frame_clock, 6.28318530718) : 0.0;
     float scans = 1.0;
@@ -3220,33 +3471,46 @@ float4 PS_RenderCRTScene(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
 }
 
 // Build halation from the completed CRT emission, after phosphor masking, display primaries,
-// contrast/saturation, vignette, scanline modulation and brightness. The result is a scalar
-// luminance bright-pass; tint and the A/B scanline choice are applied when it is composited.
-float halation_brightpass(float2 uv)
+// contrast/saturation, vignette, scanline modulation and brightness. The legacy mode emits a
+// scalar luminance mask; the experimental modes retain highlight RGB, with optional headroom.
+float3 halation_brightpass(float2 uv)
 {
     if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0)
-        return 0.0;
+        return float3(0.0, 0.0, 0.0);
 
     float3 emitted = max(tex2D(sCrtScene, uv).rgb, float3(0.0, 0.0, 0.0));
     float luminance = dot(emitted, float3(0.2126, 0.7152, 0.0722));
     float threshold_range = max(1.0 - halation_threshold, 0.001);
-    return saturate((luminance - halation_threshold) / threshold_range);
+    float response = saturate((luminance - halation_threshold) / threshold_range);
+    if (halation_extraction_mode == 2 && luminance > 1.0)
+        response += halation_extended_gain * log2(luminance);
+
+    if (halation_extraction_mode == 0)
+        return response.xxx;
+
+    // Scale the emitted RGB vector so its Rec.709 luminance equals the threshold response.
+    // This retains the highlight's hue instead of converting every bright feature to white.
+    return emitted * (response / max(luminance, 0.00001));
 }
 
 float4 PS_HalationBlurHorizontal(float4 pos : SV_Position, float2 uv : TEXCOORD0) : SV_Target
 {
     bool halation_diagnostic = (debug_view >= 14 && debug_view <= 16);
     if (debug_view == 14)
-        return float4(halation_brightpass(uv) * 4.0, 0.0, 0.0, 0.0);
+    {
+        float3 bright = halation_brightpass(uv);
+        return float4(dot(bright, float3(0.2126, 0.7152, 0.0722)) * 4.0, 0.0, 0.0, 0.0);
+    }
     if (halation_strength <= 0.00001 && !halation_diagnostic)
         return float4(0.0, 0.0, 0.0, 0.0);
-    if (blur_x <= 0.00001)
-        return float4(halation_brightpass(uv), 0.0, 0.0, 0.0);
+    float halation_blur_x = blur_x * halation_spread;
+    if (halation_blur_x <= 0.00001)
+        return float4(halation_brightpass(uv), 0.0);
 
     // Keep the full nine evaluations: bright-pass thresholding is nonlinear,
     // so bilinear pairing before that function would not equal pairing its output.
-    float2 stp = float2(blur_x, 0.0) * ReShade::PixelSize.xy;
-    float sum = halation_brightpass(uv) * 0.2270270270;
+    float2 stp = float2(halation_blur_x, 0.0) * ReShade::PixelSize.xy;
+    float3 sum = halation_brightpass(uv) * 0.2270270270;
     sum += halation_brightpass(uv - 4.0 * stp) * 0.0162162162;
     sum += halation_brightpass(uv - 3.0 * stp) * 0.0540540541;
     sum += halation_brightpass(uv - 2.0 * stp) * 0.1216216216;
@@ -3255,7 +3519,7 @@ float4 PS_HalationBlurHorizontal(float4 pos : SV_Position, float2 uv : TEXCOORD0
     sum += halation_brightpass(uv + 2.0 * stp) * 0.1216216216;
     sum += halation_brightpass(uv + 3.0 * stp) * 0.0540540541;
     sum += halation_brightpass(uv + 4.0 * stp) * 0.0162162162;
-    return float4(sum, 0.0, 0.0, 0.0);
+    return float4(sum, 0.0);
 }
 float4 PS_HalationBlurVertical(float4 pos : SV_Position, float2 uv : TEXCOORD0) : SV_Target
 {
@@ -3263,43 +3527,46 @@ float4 PS_HalationBlurVertical(float4 pos : SV_Position, float2 uv : TEXCOORD0) 
         return float4(0.0, 0.0, 0.0, 0.0);
     if (halation_strength <= 0.00001 && debug_view != 16)
         return float4(0.0, 0.0, 0.0, 0.0);
-    if (blur_y <= 0.00001)
-        return float4(tex2D(GaussianBlurTempSampler, uv).r * blur_valid_y(uv.y), 0.0, 0.0, 0.0);
 
-    float2 stp = float2(0.0, blur_y) * ReShade::PixelSize.xy;
-    bool pairable = abs(blur_y - 0.5) < 0.0001 || abs(blur_y - 1.0) < 0.0001;
+    float halation_blur_y = blur_y * halation_spread;
+    if (halation_blur_y <= 0.00001)
+        return float4(tex2D(GaussianBlurTempSampler, uv).rgb * blur_valid_y(uv.y), 0.0);
+
+    float2 stp = float2(0.0, halation_blur_y) * ReShade::PixelSize.xy;
+    bool pairable = abs(halation_blur_y - 0.5) < 0.0001
+        || abs(halation_blur_y - 1.0) < 0.0001;
     bool safe_pair_region = uv.y > (4.0 * stp.y + 2.0 * ReShade::PixelSize.y)
         && uv.y < (1.0 - 4.0 * stp.y - 2.0 * ReShade::PixelSize.y);
     if (pairable && safe_pair_region)
     {
-        float paired = tex2D(GaussianBlurTempSampler, uv).r * 0.2270270270;
-        paired += tex2D(GaussianBlurTempSampler, uv - 1.3846153846 * stp).r * 0.3162162162;
-        paired += tex2D(GaussianBlurTempSampler, uv + 1.3846153846 * stp).r * 0.3162162162;
-        paired += tex2D(GaussianBlurTempSampler, uv - 3.2307692308 * stp).r * 0.0702702703;
-        paired += tex2D(GaussianBlurTempSampler, uv + 3.2307692308 * stp).r * 0.0702702703;
-        return float4(paired, 0.0, 0.0, 0.0);
+        float3 paired = tex2D(GaussianBlurTempSampler, uv).rgb * 0.2270270270;
+        paired += tex2D(GaussianBlurTempSampler, uv - 1.3846153846 * stp).rgb * 0.3162162162;
+        paired += tex2D(GaussianBlurTempSampler, uv + 1.3846153846 * stp).rgb * 0.3162162162;
+        paired += tex2D(GaussianBlurTempSampler, uv - 3.2307692308 * stp).rgb * 0.0702702703;
+        paired += tex2D(GaussianBlurTempSampler, uv + 3.2307692308 * stp).rgb * 0.0702702703;
+        return float4(paired, 0.0);
     }
 
     float2 tap = uv;
-    float sum = tex2D(GaussianBlurTempSampler, tap).r
+    float3 sum = tex2D(GaussianBlurTempSampler, tap).rgb
         * (0.2270270270 * blur_valid_y(tap.y));
     tap = uv - 4.0 * stp;
-    sum += tex2D(GaussianBlurTempSampler, tap).r * (0.0162162162 * blur_valid_y(tap.y));
+    sum += tex2D(GaussianBlurTempSampler, tap).rgb * (0.0162162162 * blur_valid_y(tap.y));
     tap = uv - 3.0 * stp;
-    sum += tex2D(GaussianBlurTempSampler, tap).r * (0.0540540541 * blur_valid_y(tap.y));
+    sum += tex2D(GaussianBlurTempSampler, tap).rgb * (0.0540540541 * blur_valid_y(tap.y));
     tap = uv - 2.0 * stp;
-    sum += tex2D(GaussianBlurTempSampler, tap).r * (0.1216216216 * blur_valid_y(tap.y));
+    sum += tex2D(GaussianBlurTempSampler, tap).rgb * (0.1216216216 * blur_valid_y(tap.y));
     tap = uv - 1.0 * stp;
-    sum += tex2D(GaussianBlurTempSampler, tap).r * (0.1945945946 * blur_valid_y(tap.y));
+    sum += tex2D(GaussianBlurTempSampler, tap).rgb * (0.1945945946 * blur_valid_y(tap.y));
     tap = uv + 1.0 * stp;
-    sum += tex2D(GaussianBlurTempSampler, tap).r * (0.1945945946 * blur_valid_y(tap.y));
+    sum += tex2D(GaussianBlurTempSampler, tap).rgb * (0.1945945946 * blur_valid_y(tap.y));
     tap = uv + 2.0 * stp;
-    sum += tex2D(GaussianBlurTempSampler, tap).r * (0.1216216216 * blur_valid_y(tap.y));
+    sum += tex2D(GaussianBlurTempSampler, tap).rgb * (0.1216216216 * blur_valid_y(tap.y));
     tap = uv + 3.0 * stp;
-    sum += tex2D(GaussianBlurTempSampler, tap).r * (0.0540540541 * blur_valid_y(tap.y));
+    sum += tex2D(GaussianBlurTempSampler, tap).rgb * (0.0540540541 * blur_valid_y(tap.y));
     tap = uv + 4.0 * stp;
-    sum += tex2D(GaussianBlurTempSampler, tap).r * (0.0162162162 * blur_valid_y(tap.y));
-    return float4(sum, 0.0, 0.0, 0.0);
+    sum += tex2D(GaussianBlurTempSampler, tap).rgb * (0.0162162162 * blur_valid_y(tap.y));
+    return float4(sum, 0.0);
 }
 
 float3 halation_contribution(float2 faceplate_uv, float scanline_factor)
@@ -3307,7 +3574,7 @@ float3 halation_contribution(float2 faceplate_uv, float scanline_factor)
     if (halation_strength <= 0.00001)
         return float3(0.0, 0.0, 0.0);
 
-    float halation = tex2D(GaussianBlurSampler, faceplate_uv).r;
+    float3 halation = tex2D(GaussianBlurSampler, faceplate_uv).rgb;
     // A is the default optical model: the blur spreads into dark scanline gaps. B is a
     // selectable stylized mode that reapplies the local, pre-blur scanline attenuation.
     if (halation_respects_scanlines)
@@ -3630,7 +3897,7 @@ float3 sample_crt_surface(sampler source_sampler, float2 centre_uv,
 // neutral, preserving Rec.709 luminance. This selects colors, not objects or screen regions.
 float3 apply_selective_warm_desaturation(float3 linear_rgb)
 {
-    if (!enable_selective_warm_desaturation || selective_warm_saturation_reduction <= 0.00001)
+    if (!warm_hue_desaturation || warm_desaturation_amount <= 0.00001)
         return linear_rgb;
 
     float3 hue_rgb = pow(saturate(linear_rgb), 1.0 / 2.2);
@@ -3662,7 +3929,7 @@ float3 apply_selective_warm_desaturation(float3 linear_rgb)
     // Avoid applying a hue adjustment to near-neutral pixels, where hue is unstable.
     float hsv_saturation = chroma / max(max_channel, 0.00001);
     float saturation_weight = smoothstep(0.08, 0.20, hsv_saturation);
-    float adjustment = saturate(selective_warm_saturation_reduction)
+    float adjustment = saturate(warm_desaturation_amount)
         * hue_weight * saturation_weight;
 
     float luma = max(dot(linear_rgb, float3(0.2126, 0.7152, 0.0722)), 0.0);
@@ -3700,9 +3967,15 @@ float4 PS_CompositeBloom(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
     if (debug_view == 14)
         return float4(saturate(tex2D(GaussianBlurTempSampler, uv_tx).r).xxx, 1.0);
     if (debug_view == 15)
-        return float4(saturate(tex2D(GaussianBlurTempSampler, uv_tx).r * 4.0).xxx, 1.0);
+    {
+        float3 h = tex2D(GaussianBlurTempSampler, uv_tx).rgb;
+        return float4(saturate(dot(h, float3(0.2126, 0.7152, 0.0722)) * 4.0).xxx, 1.0);
+    }
     if (debug_view == 16)
-        return float4(saturate(tex2D(GaussianBlurSampler, uv_tx).r * 4.0).xxx, 1.0);
+    {
+        float3 h = tex2D(GaussianBlurSampler, uv_tx).rgb;
+        return float4(saturate(dot(h, float3(0.2126, 0.7152, 0.0722)) * 4.0).xxx, 1.0);
+    }
 
     float2 geometry_uv = project_crt_surface(uv_tx, screen_size);
     if (debug_view == 18)
@@ -3737,13 +4010,17 @@ float4 PS_CompositeBloom(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
     float2 screen_uv = lerp(screen_fit_uv(uv), uv, 0.4);
     if (debug_view == 17)
     {
-        float debug_vignette = vignette_multiplier(screen_uv, uv_tx * screen_size);
-        return float4(saturate(debug_vignette / 1.3).xxx, 1.0);
+        // Match the source-space texel in tCrtScene selected by geometry reconstruction.
+        // Using uv_tx here would disagree with the vignette already baked into that texel
+        // whenever a curved profile remaps geometry_uv.
+        float debug_vignette = vignette_multiplier(screen_uv, geometry_uv * screen_size);
+        float debug_vignette_reference = (vignette_normalization == 1) ? 1.0 : (1.3 * 1.04880884817);
+        return float4(saturate(debug_vignette / debug_vignette_reference).xxx, 1.0);
     }
     float frame_clock = animation_frame_clock();
     float time = mod(frame_clock, 640.0);
 
-    if (noise_amount > 0.000001)
+    if (noise_amount > 0.000001 && (noise_placement == 0 || noise_placement == 2))
     {
         float grain_frame = mod(frame_clock * noise_animation_speed, 640.0);
         // Output-grid grain is anchored to the actual final composite pixel, not the projected

@@ -22,7 +22,7 @@ The main visual references used by the author are:
 - **Metal Gear Solid 1 (PS1)** — another game that has been observed to work well with the shader.
 - Other games may look good, but no claim is made that every game or console has been calibrated or exhaustively tested.
 
-The **current default preset** is deliberately mild and approachable rather than a complete electrical, optical, or analog-video CRT simulation. That describes the present configuration; it is not a restriction on what future users may ask the shader to become. The current look is primarily produced by combining:
+The **current development preset** retains the established Trinitron-inspired base but deliberately enables new experimental processing paths for visual comparison. It is not yet a settled release preset or a complete electrical, optical, or analog-video CRT simulation. The current look is primarily produced by combining:
 
 - selectable display color profiles;
 - selectable phosphor-mask patterns;
@@ -58,11 +58,11 @@ This Trinitron reference applies to the **whole rendering treatment**, not only 
 
 The other entries in **Display Color Profile** are optional user-customization choices. They provide alternative color-primary/white-point interpretations and, where the profile mapping specifies it, a convenient automatic mask pairing. They do **not** switch the shader into a separate complete Toshiba, BVM or KX-14CP1 hardware simulation, and they do not replace the underlying Trinitron-oriented image-formation and effects model. The Japanese Cool Sony Trinitron profile remains the default and central reference; the additional profiles make the shader more flexible for users whose preferred color appearance differs.
 
-### 1.3 Authoring context and current default aesthetic
+### 1.3 Authoring context and current development defaults
 
-The shader was developed with **AI-assisted research, implementation, mathematical analysis and iterative technical review** under the project direction of `bone-machine`. The saved defaults are the author’s preferred visual settings, selected by eye rather than by instrumented calibration. They are not measurements or factory calibrations of a particular television.
+The shader was developed with **AI-assisted research, implementation, mathematical analysis and iterative technical review** under the project direction of `bone-machine`. The established profile and baseline values reflect the author's visual direction, selected by eye rather than by instrumented calibration. The additional modes and slider values introduced in this development experiment were selected to make the new processing paths meaningfully visible during A/B testing; they are provisional working defaults, not a final author-approved release preset. None of the values are measurements or factory calibrations of a particular television.
 
-The out-of-box configuration is a **mild, flat Sony Trinitron-inspired treatment**. Its default character is a **cool, blue-ish Japanese P22-inspired look**, with Flat geometry and the profile-selected aperture-grille mask. Other selectable profiles provide color and mask-pairing alternatives, not independent complete CRT models. For ordinary use, the author recommends starting with the defaults and changing only familiar high-level settings such as the display profile, scanline visibility/strength, smoothing, grain, bloom or halation. Detailed beam, mask, reconstruction and geometry controls are intended for users who understand their interactions; advanced users may change them freely.
+The current configuration retains a **cool, blue-ish Japanese P22-inspired base**, Flat geometry and the profile-selected aperture-grille mask, while enabling experimental Luminance-Preserving highlight gamut handling, Center-Normalized vignette, rate-stable field phase, Hybrid signal/finishing noise and RGB-Preserving + Extended halation. Other selectable profiles provide color and mask-pairing alternatives, not independent complete CRT models. Detailed beam, mask, reconstruction and geometry controls are intended for users who understand their interactions; advanced users may change them freely.
 
 This describes the current design target and preset, not a requirement that future work must never change. The shader is editable, and a user may request a different visual target or a more detailed signal/display model. Follow the requested direction while clearly distinguishing a Trinitron-inspired post-process from a physically complete hardware simulation.
 
@@ -96,25 +96,25 @@ This is the technical handoff for the current CRT-Trinity implementation. The ac
 3. **Do not describe the shader as a complete CRT simulation.** It uses screen-space approximations. Grain, ghosting, bloom, flicker, interference and other finishing choices are selected partly because they look good; they are not claims about inevitable behaviour of every Trinitron.
 4. **Preserve the current display-profile semantics.** Sony and Neutral profiles default to Aperture Grille; Toshiba AF profiles default to Slot Mask. Explicit mask selection changes only the mask, not the color profile. `Neutral — Standard` bypasses only `apply_display_color_profile()`; the rest of the shader remains active.
 5. **Preserve the source-reconstruction defaults unless asked otherwise.** `Pixel Smoothing Mode` defaults to Subpixel Blend (`1`) and `Pixel Smoothing` is `0.35`. `adjacent_tap_edge_blending` remains hidden and false by default. Its cached adjacent-tap implementation is retained, but the user reported no useful visible effect from the exposed toggle; do not re-expose it without validating its visual result. It only affects Edge-Aware and Hybrid modes. Detail-confidence analysis may still run for grain protection independently of the selected smoothing mode.
-6. **Keep all beam-profile implementations even though their selectors are hidden.** The saved defaults are Gaussian Beam (`scanline_profile = 1`), Gaussian spot (`beam_spot_profile = 0`) and Single Lobe (`horizontal_spot_structure = 0`). The alternative Sine scanline waveform, Super-Gaussian and Lorentzian spot kernels, and Core + Tail horizontal structure remain implemented in the shader. Their selector/parameter uniforms are hidden, not deleted. Keep their functions, branches, macros, defaults and documentation synchronized; do not remove them when simplifying the UI. Hidden Tail Energy and Tail Width remain `2.0%` and `2.0x`. The Scanlines & Beam UI contains 12 user-adjustable settings plus a display-only legend. `Scanline Strength = 0` is the user-facing way to bypass vertical beam modulation; phosphor masks and damping wires remain active.
+6. **Keep all beam-profile implementations even though their selectors are hidden.** The saved defaults are Gaussian Beam (`scanline_profile = 1`), Gaussian spot (`beam_spot_profile = 0`) and Single Lobe (`horizontal_spot_structure = 0`). The alternative Sine scanline waveform, Super-Gaussian and Lorentzian spot kernels, and Core + Tail horizontal structure remain implemented in the shader. Their selector/parameter uniforms are hidden, not deleted. Keep their functions, branches, macros, defaults and documentation synchronized; do not remove them when simplifying the UI. Hidden Tail Energy and Tail Width remain `2.0%` and `2.0x`. The Scanlines & Beam UI contains 14 user-adjustable settings plus a display-only motion note. `Scanline Strength = 0` is the user-facing way to bypass vertical beam modulation; phosphor masks and damping wires remain active.
 7. **Respect beam-model and attenuation defaults.** Shared Beam is the default Vertical Beam Model. Per-source-line RGB Attenuation defaults to Source-Domain; Post-Display (Shared Beam-aligned) is optional. The latter is meaningful only for Per-source-line RGB. Field-Phase Flicker forces Per-source-line RGB and Post-Display while active.
-8. **Preserve Field-Phase Flicker's exact override.** It is off by default and temporarily overrides all 12 adjustable Scanlines & Beam controls. It forces Per-source-line RGB, Post-Display attenuation, Rolling Scanlines off and Alternating Field Phase on; it pins Scanline Strength to `1.7` and the remaining adjustable values to their saved section defaults. User selections are not overwritten and resume when the toggle is disabled. Keep the persistent UI legend short and blunt; put the technical explanation in the tooltip and this file.
-9. **Understand its phase behaviour accurately.** `FCount` parity switches the phase between 0 and π on successive rendered frames. In the Per-source-line RGB path that becomes a half-cycle shift in beam coordinates, redistributing neighbouring source-line weights. The whole procedural pattern changes phase globally; this is not a physical beam sweeping down the screen or true 480i reconstruction.
-10. **Keep current visual defaults synchronized.** Vignette Strength is `0.5`, Vignette Mapping is Symmetric Viewport, and the hidden `headroom_aware_grain` feature is enabled by default (`true`). Update §3 and §14 whenever a default changes.
+8. **Preserve Field-Phase Flicker's exact override.** It is off by default and temporarily overrides the 12 original beam/model controls; the added `Field Phase Timing` and `Field Phase Reference Rate` selectors are deliberately not overridden, so the user can choose rate-stable 60/50 Hz elapsed-time timing or legacy frame-counter timing while the effect is active. It forces Per-source-line RGB, Post-Display attenuation, Rolling Scanlines off and Alternating Field Phase on; it pins Scanline Strength to `1.7` and the remaining original beam settings to their saved section defaults. User selections are not overwritten and resume when the toggle is disabled. Keep the visible motion/comfort note concise and keep the full explanation here.
+9. **Understand its phase behaviour accurately.** `Field Phase Timing` defaults to Rate-Stable Elapsed Time. `Field Phase Reference Rate` defaults to 60 Hz and can be set to PAL 50 Hz: the field phase is derived from `animation_frame_clock()` scaled to the selected reference, advancing by π per 1/60- or 1/50-second interval and producing a 30 or 25 Hz two-state cycle independent of render FPS. This selector affects Alternating Field Phase only; Rolling Scanlines retains its existing 60 Hz-equivalent elapsed-time rate. Legacy Frame Counter uses `FCount` parity and alternates on successive rendered frames; the reference-rate selector is ignored in that mode. In the Per-source-line RGB path either source becomes a half-cycle shift in beam coordinates, redistributing neighbouring source-line weights. The complete procedural pattern changes phase globally; this is not a physical beam sweeping down the screen or true 480i reconstruction. `Rolling Scanlines` remains an elapsed-time phase (`mod(6 * frameClock, 2π)`), so its sampled motion can still alias at different presentation rates.
+10. **Keep current visual defaults synchronized.** Vignette Strength is `0.5`, Vignette Mapping is Symmetric Viewport, Vignette Normalization is Center-Normalized, Highlight Gamut Handling is Luminance-Preserving, Noise Placement is Hybrid, Field Phase Timing is Rate-Stable Elapsed Time, Halation Extraction is RGB-Preserving + Extended, and `headroom_aware_grain` remains enabled by default (`true`). The warm-hue desaturation toggle defaults on at amount `0.4`. Update §3 and §14 whenever a default changes.
 11. **Keep diagnostic views synchronized.** `Debug View` currently has 21 entries, indexed 0–20. Maintain the UI list, pixel-shader branches, composite-stage branches, README list and §14.13 as one contract. Diagnostic paths may deliberately override normal effect early-outs to expose intermediate buffers.
 12. **Track color domains carefully.** The accumulation stage decodes the source with the BT.1886-style EOTF approximation and stores intermediate values in RGBA16F. Identify whether each value is encoded, linear, tone-mapped or output-referred before adding transfer functions or moving calculations.
 13. **Respect alpha-channel contracts.** `tSmoothH.a` and `tSmoothV.a` carry detail confidence; `tCrtScene.a` carries scanline metadata, not opacity. Update every consumer if these contracts change.
 14. **Respect sequential render-target lifetimes.** `GaussianBlurTemp` and `GaussianBlurTex` first hold source ghost blur, then are overwritten after the CRT scene pass with halation data. Pass reordering must re-check every read/write.
 15. **Understand the halation/bloom relationship.** Halation is composited directly and also contributes to wider bloom extraction. Bloom Intensity zero bypasses normal bloom pixel work and final bloom sampling, but the three bloom passes remain scheduled by ReShade FX.
 16. **Keep the README user-facing and concise.** It should explain what the controls do, where the shader is intended to run, its design inspiration and its aesthetic limitations. Keep detailed formulas, resource contracts and implementation notes here. Preserve the current UI category order: CRT-Trinity, Display Setup, Image & Color, Source Image Filtering, Screen Geometry, Scanlines & Beam, Noise & Grain, Signal & Temporal Effects, Glow & Ghosting, Bloom, Phosphor Mask Settings, Experimental and Diagnostics. In particular, Signal & Temporal Effects must remain below Noise & Grain.
-17. **Verify UI controls and restrictions.** Every user-facing control needs an observable code path; document any mode restrictions. A display-only `ui_text` legend is not a user-adjustable setting. When the user asks to hide a control, retain its uniform, default, calculations and dependencies and add ReShade's `hidden = true;` annotation. Do not delete hidden parameters or their implementation just to simplify the UI. In particular, retain the Sine, Super-Gaussian, Lorentzian and Core + Tail algorithms and code paths while the UI selectors remain hidden; Gaussian Beam / Gaussian / Single Lobe are the saved defaults, not the only implemented options. Document hidden values and algorithms here so later maintainers can restore or retune them safely.
+17. **Verify UI controls and restrictions.** Every user-facing rendering control needs an observable code path; document any mode restrictions. The single-entry Version and Author combos and the Credits combo are informational UI metadata and intentionally have no rendering code path. A display-only `ui_text` legend is not a user-adjustable setting. When the user asks to hide a control, retain its uniform, default, calculations and dependencies and add ReShade's `hidden = true;` annotation. Do not delete hidden parameters or their implementation just to simplify the UI. In particular, retain the Sine, Super-Gaussian, Lorentzian and Core + Tail algorithms and code paths while the UI selectors remain hidden; Gaussian Beam / Gaussian / Single Lobe are the saved defaults, not the only implemented options. Document hidden values and algorithms here so later maintainers can restore or retune them safely.
 18. **Test temporal behaviour in motion.** Single screenshots cannot validate grain animation, `FCount` parity, Field-Phase Flicker, persistence, rolling phase or frame pacing.
 19. **Do not claim successful compilation or runtime testing unless performed.** Static inspection is not compilation. Name the compiler/backend and report actual DuckStation testing separately.
-20. **Preserve unrelated intentional choices.** In particular, do not remove or retune the locked warm/red selective desaturation unless the user explicitly asks for that change.
+20. **Preserve the warm-hue adjustment as an explicit user setting.** `Warm Hue Desaturation` defaults on and `Warm Desaturation Amount` defaults to `0.4`, matching the former compile-time behavior. Keep the fixed hue-selection window and feather unless the user asks to retune them; do not silently remove the new UI controls.
 
 ## 3. Current defaults and out-of-box look
 
-The following table records the current saved defaults and fixed rendering choices. They represent the author's preferred appearance, not instrumented calibration. Rows follow the DuckStation UI category order; the exhaustive control/range reference is in §14.
+The following table records the current development defaults and fixed rendering choices. This is an experimental combination for visual testing, not an approved release preset or instrumented calibration. Rows follow the DuckStation UI category order; the exhaustive control/range reference is in §14.
 
 | UI Category | Setting | Current default | Meaning |
 |---|---|---:|---|
@@ -125,8 +125,12 @@ The following table records the current saved defaults and fixed rendering choic
 | Image & Color | Saturation | `0.94` | Slightly restrained saturation relative to the selected profile white. |
 | Image & Color | Gamma | `2.2` | Input BT.1886-style EOTF parameter. |
 | Image & Color | Black Level | `0.004` | Normalized input black reference. |
+| Image & Color | Highlight Gamut Handling | Luminance-Preserving (`1`) | Compresses highlight chroma toward neutral when mapped RGB exceeds SDR gamut, retaining mapped luminance where possible. |
+| Image & Color | Warm Hue Desaturation | On (`true`) | Applies the former fixed warm/red saturation trim; now user-toggleable. |
+| Image & Color | Warm Desaturation Amount | `0.4` | Maximum saturation reduction in the fixed warm-hue selection window. |
 | Image & Color | Vignette Strength | `0.5` | Edge-darkening blend. |
 | Image & Color | Vignette Mapping | Symmetric Viewport (`1`) | Uses coordinates normalized to the active image viewport. |
+| Image & Color | Vignette Normalization | Center-Normalized (`1`) | Keeps the center multiplier at exactly `1.0`; legacy center gain remains selectable. |
 | Image & Color | Color Fringing | `0.15` | Small channel-specific sample offsets. |
 | Image & Color | Edge Zoom | `1.0` | No additional crop. |
 | Source Image Filtering | Pixel Smoothing Mode | Subpixel Blend (`1`) | Symmetric half-offset source reconstruction; Edge-Aware and Hybrid remain selectable. |
@@ -156,9 +160,15 @@ The following table records the current saved defaults and fixed rendering choic
 | Scanlines & Beam | Horizontal Beam Spot Width | `0.15` | Gaussian horizontal spot sigma at 1080p before internal-grid conversion. |
 | Scanlines & Beam | Manual Scanline Density | `340` | Spatial beam-pattern density; `0` uses the output-resolution-dependent NewPixie pitch. |
 | Scanlines & Beam | Match Scanlines to Native Resolution | Off | Uses DuckStation native raster dimensions when valid; overrides manual density. |
-| Scanlines & Beam | Alternating Field Phase | On | Half-period phase shift on alternating rendered frames. |
+| Scanlines & Beam | Alternating Field Phase | On | Half-period phase progression at the selected timing mode. |
+| Scanlines & Beam | Field Phase Timing | Rate-Stable Elapsed Time (`1`) | Uses elapsed time rather than rendered-frame parity. |
+| Scanlines & Beam | Field Phase Reference Rate | 60 Hz (`0`) | 60 Hz gives a 30 Hz two-state cycle; PAL 50 Hz gives a 25 Hz cycle. Used only by Rate-Stable Elapsed Time. |
 | Scanlines & Beam | Rolling Scanlines | On | Continuous phase animation from elapsed time. |
-| Noise & Grain | Noise Amount | `0.06` | Subtle animated grain. |
+| Noise & Grain | Noise Placement | Hybrid (Both, `2`) | Combines pre-beam signal noise and the existing post-tone-map grain. |
+| Noise & Grain | Pre-Beam Signal Noise Amount | `0.018` | Subtle linear-light noise before beam and mask treatment. |
+| Noise & Grain | Signal Noise Chroma | `0.25` | Mostly shared RGB noise with a restrained independent-channel component. |
+| Noise & Grain | Signal Noise Line Correlation | `0.25` | Small component shared along native raster lines. |
+| Noise & Grain | Post-Tone-Map Grain Amount | `0.06` | Existing finishing grain amplitude. |
 | Noise & Grain | Luminance Adaptation | `0.15` | Reduces grain in darker areas. |
 | Noise & Grain | Headroom-Aware Grain (hidden) | On (`true`) | Symmetrically scales grain to available black/white headroom; enabled by default and retained internally without a UI toggle. |
 | Noise & Grain | Grain Chroma (hidden) | `0.71` | Fixed blend between shared and independent RGB noise; retained but hidden from the UI. |
@@ -175,6 +185,9 @@ The following table records the current saved defaults and fixed rendering choic
 | Glow & Ghosting | Horizontal / Vertical Blur | `0.5 / 0.5` | Shared blur radii for source ghosting and halation. |
 | Glow & Ghosting | Ghost Strength | `0.6` | Color-separated source-blur contribution. |
 | Glow & Ghosting | Halation Strength | `0.15` | Post-emission optical glow. |
+| Glow & Ghosting | Halation Extraction | RGB-Preserving + Extended (`2`) | Retains highlight hue and allows linear highlights above 1.0 to contribute. |
+| Glow & Ghosting | Extended Highlight Gain | `0.35` | Gain for the logarithmic contribution above linear luminance 1.0. |
+| Glow & Ghosting | Halation Spread | `1.25` | Expands the shared blur radii for halation only; ghosting blur is unchanged. |
 | Glow & Ghosting | Halation Respects Scanlines | Off | Glow can spread into scanline gaps. |
 | Glow & Ghosting | Halation Threshold | `0.8` | Bright-pass threshold against completed CRT-scene luminance. |
 | Glow & Ghosting | Halation Warmth | `0.3` | White-to-amber glow tint blend. |
@@ -201,14 +214,14 @@ The technique is an ordered 13-pass pipeline. The order is intentional because s
 3. `Pass_GaussianBlurHorizontal` — horizontal source-image blur for ghosting.
 4. `Pass_GaussianBlurVertical` — vertical completion of the ghosting blur.
 5. `Pass_SmoothH` — internal-grid source sampling, 3×3 edge analysis, adaptive Pixel Smoothing, horizontal source-cell integration and horizontal spot filtering.
-6. `Pass_SmoothV` — area-integrated vertical source-pixel Gaussian smoothing.
-7. `Pass_RenderCRTScene` — source mapping, channel offsets/fringing, optional per-source-line RGB beam reconstruction, ghosting, phosphor mask, damping wires, display color matrix, contrast/saturation, vignette and shared Gaussian scanline modulation. Store scanline metadata in alpha.
-8. `Pass_HalationBlurHorizontal` — extract highlights from the completed phosphor/beam scene and blur horizontally.
-9. `Pass_HalationBlurVertical` — complete the halation blur.
+6. `Pass_SmoothV` — area-integrated vertical source-pixel Gaussian smoothing, then optional native-cell-keyed pre-beam signal-noise injection. This is before beam, scanline and phosphor-mask treatment.
+7. `Pass_RenderCRTScene` — source mapping, channel offsets/fringing, optional per-source-line RGB beam reconstruction, ghosting, phosphor mask, damping wires, display color matrix, contrast/saturation, normalized or legacy vignette, and shared Gaussian scanline modulation. Store scanline metadata in alpha.
+8. `Pass_HalationBlurHorizontal` — extract completed-scene highlights as legacy scalar luminance or RGB-preserving emission, optionally extend response above linear 1.0, and blur horizontally using the independent Halation Spread multiplier.
+9. `Pass_HalationBlurVertical` — complete the RGB or scalar halation blur using the same halation-only spread multiplier.
 10. `Pass_ExtractBloom` — 4×4 downsample of separately thresholded post-phosphor highlights plus the direct halation contribution.
 11. `Pass_BloomBlurHorizontal` — quarter-resolution horizontal bloom blur.
 12. `Pass_BloomBlurVertical` — quarter-resolution vertical bloom blur.
-13. `Pass_CompositeBloom` — optional faceplate projection, direct halation, bloom, tone mapping, selective warm-color desaturation, animated grain/flicker, faceplate coverage and final SDR clamp.
+13. `Pass_CompositeBloom` — optional faceplate projection, direct halation, bloom, tone mapping with selectable highlight-gamut handling, selectable warm-hue desaturation, optional post-tone-map finishing grain (Post-Tone-Map or Hybrid mode), final flicker, faceplate coverage and final SDR clamp.
 
 The final composite pass has no explicit `RenderTarget`; it writes to the technique output. ReShade FX schedules all declared passes in the technique. A uniform such as `bloom_intensity` can bypass the shader work inside a pass, but it cannot remove a pass from the host schedule.
 
@@ -282,8 +295,8 @@ The source is clamped to nonnegative normalized SDR values before this function.
 
 `PS_AccumulateFrame()`:
 
-1. Reads `tAccTex`, the previous-frame history.
-2. Clears the history sample if it contains NaN/Inf, negative values, RGB above `1.5`, or alpha above `1.0`.
+1. Initializes the local history value to zero. It reads `tAccTex` only when `acc_modulate > 0.000001`; with persistence disabled, the prior-frame sample cannot contribute and the full-resolution history texture read is skipped.
+2. When history is read, clears the sample if it contains NaN/Inf, negative values, RGB above `1.5`, or alpha above `1.0`.
 3. Clears on `history_reset` or `FCount <= 1`. DuckStation increments the frame counter before updating the source uniforms, so frame 1 is used as the new-target initialization point.
 4. Multiplies history by `acc_modulate`.
 5. Samples the current backbuffer, decodes it with `decode_crt_eotf()` and applies the retained `1.25` gain.
@@ -295,13 +308,13 @@ C_t=\max(C_{current,t},\;mC_{history,t-1})
 
 where `m = acc_modulate` and the maximum is independently applied to R, G and B. This is not conventional exponential motion blur and not a measured phosphor-decay curve. It preserves older values only while they remain brighter than the current channel value, producing a bright-trail effect. The default `acc_modulate = 0` disables the retained contribution.
 
-`Pass_SaveHistory` writes the newly accumulated `tAccumFrame` to `tAccTex`. This explicit target avoids depending on implicit backbuffer ping-pong. An FX shader cannot reliably identify every possible arbitrary, finite, uninitialized history value after target reallocation; the automatic first-frame clear and manual Reset History control cover the known reset paths.
+`Pass_SaveHistory` still writes the newly accumulated `tAccumFrame` to `tAccTex` every frame, including when persistence is zero. This keeps history current so enabling persistence later does not begin from a stale frame. The optimization removes the unnecessary history sample from `PS_AccumulateFrame()`; it does not remove the scheduled save pass or its target write. This explicit target avoids depending on implicit backbuffer ping-pong. An FX shader cannot reliably identify every possible arbitrary, finite, uninitialized history value after target reallocation; the automatic first-frame clear and manual Reset History control cover the known reset paths.
 
 ### 5.3 Linear-light assumptions and scene domains
 
 The intended path after accumulation is linear light. Source reconstruction, ghost blur, phosphor-mask multiplication, display matrices, scanline modulation, halation extraction/blur, bloom extraction/blur and tone mapping all operate on these linear values. The shader stores high-dynamic-range intermediate values in FP16 render targets even though the final output is SDR-clamped.
 
-Grain and the final small flicker are added after the filmic tone curve. Their placement is a stylistic display-output choice; it does not turn the full shader into a complete color-managed display simulation.
+The new pre-beam signal-noise field is added after vertical source reconstruction in `PS_SmoothV`, while the existing finishing grain and subtle final flicker remain after the filmic curve in `PS_CompositeBloom`. In the default Hybrid Noise Placement mode, both noise layers are active: pre-beam noise is subsequently shaped by beam/scanline and phosphor-mask processing; post-tone-map grain remains an output-grid/source-grid finishing texture. Their different positions are intentional and should not be described as the same physical noise process.
 
 ### 5.4 Filmic tone mapping and output encoding
 
@@ -317,7 +330,12 @@ x=\max(Y-T,0)
 Y'=\frac{x(6.2x+0.5)}{x(6.2x+1.7)+0.06}
 \]
 
-The output RGB vector is scaled uniformly by `Y'/Y` (with a near-black guard) and is capped if a channel still exceeds 1. This preserves the input color ratios through the luminance curve rather than rolling off each RGB channel independently. `filmic()` is a tone-mapping curve, **not** an sRGB OETF.
+The output RGB vector is initially scaled uniformly by `Y'/Y` (with a near-black guard), retaining the established luminance tone curve. If a mapped component exceeds 1, `Highlight Gamut Handling` chooses how to fit the result into SDR RGB:
+
+- **Hue-Preserving (Legacy):** scales the entire vector by its peak, retaining channel ratios but reducing the mapped luminance.
+- **Luminance-Preserving (default):** compresses the chroma vector toward the equal-luminance neutral axis until the peak fits 1. This retains the mapped Rec.709 luminance while reducing saturation where necessary.
+
+The second mode is a trade-off: intense saturated highlights become less saturated than in the legacy path, but do not lose as much luminance. It is a highlight-gamut operation, not an output transfer function. `filmic()` remains a tone-mapping curve, **not** an sRGB OETF.
 
 No unconditional output sRGB/power-law encoding is applied. The final backbuffer interpretation is managed by DuckStation/ReShade and can depend on backend/output format. Adding an unconditional encode without verifying that contract risks double encoding. The shader finally uses `saturate()` and is therefore SDR-oriented, not HDR-safe.
 
@@ -357,7 +375,7 @@ This behaviour was important in the *Symphony of the Night* Save Room comparison
 
 `Pixel Smoothing Mode` defaults to **Subpixel Blend (`1`)**. It averages the horizontal source-cell reconstruction kernel at two symmetric positions and does the same with the vertical source-line kernel. Each position is offset by `±0.5 * Pixel Smoothing` output pixels from the unshifted coordinate. The offset is therefore expressed in output-pixel units, then converted to the active internal/native source grid; its displacement occupies a smaller fraction of a source cell as the output-to-source scale grows. At the default strength of `0.35`, each side is offset by `0.175` output pixels.
 
-When the Gaussian/beam width on an axis is effectively zero, that pass falls back to the average of two linearly filtered samples at the same symmetric offsets. In **Hybrid** mode, this zero-width fallback is mixed 50/50 with the unshifted Edge-Aware result. With non-zero width, Hybrid combines the Edge-Aware centre-cell contribution with the symmetrically offset integrated reconstruction kernel; it is not a simple 50/50 blend in that path. **Edge-Aware** uses the adaptive 3×3 reconstruction described below. **Hybrid** enables both approaches. The default Subpixel Blend mode does not apply the adaptive edge-aware color blend, although the 3×3 neighbourhood analysis can still run to generate detail-confidence metadata for grain protection.
+When the Gaussian/beam width on an axis is effectively zero, that pass falls back to the average of two linearly filtered samples at the same symmetric offsets. In **Hybrid** mode, this zero-width fallback is mixed 50/50 with the unshifted Edge-Aware result. With non-zero width, Hybrid combines the Edge-Aware centre-cell contribution with the symmetrically offset integrated reconstruction kernel; it is not a simple 50/50 blend in that path. **Edge-Aware** uses the adaptive 3×3 reconstruction described below. **Hybrid** enables both approaches. The default Subpixel Blend mode does not apply the adaptive edge-aware color blend, although the 3×3 neighbourhood analysis can still run to generate detail-confidence metadata for grain protection. At a 1080p output with a 256×240 native source and the default strength `0.35`, the half-offset is approximately `0.031` source cells horizontally and `0.039` raster lines vertically. This makes the default Subpixel Blend adjustment deliberately subtle, and its relative source-grid displacement shrinks further as output resolution increases; do not describe it as a strong blur or assume it replaces the adaptive Edge-Aware blend.
 
 The following analysis describes the adaptive Edge-Aware path; its detail-confidence output can also be used independently by grain protection.
 
@@ -539,18 +557,27 @@ Native mode takes precedence over manual density when valid native dimensions ar
 \phi_{roll}=mod(6\cdot frameClock,2\pi)
 \]
 
-`Alternating Field Phase` uses `FCount` parity. On alternating rendered frames it changes the procedural scanline/beam phase between `0` and `π` radians. Since the phase is converted from radians to line cycles by division by `2π`, the odd/even states are displaced by exactly `0.5` of a scanline period. The whole procedural beam pattern alternates between two vertical phase positions separated by half a period; it does not model a single physical beam travelling from top to bottom. It is not real field input and does not reconstruct interlaced fields.
+The `6.0` radians-per-reference-frame rate is retained from the existing look. Since one reference frame is 1/60 second, its real-time progression is independent of render FPS. At 60 FPS the phase advances by 6 radians per rendered frame, which is just short of one complete revolution; sampled motion can therefore appear as a slow reverse crawl rather than a full-cycle jump on each frame. Other render rates sample the same continuous phase at different points and can exhibit temporal aliasing.
 
-The shader uses two timing sources deliberately:
+`Alternating Field Phase` now has a selectable clock through `Field Phase Timing`:
 
-- `timer` is milliseconds since game start. `animation_frame_clock() = max(timer,0) * 0.06` converts it to a 60 Hz-equivalent continuous clock. Rolling phase and other continuous animation therefore depend on elapsed time rather than actual rendered frame count.
-- `FCount` remains for discrete frame behaviour: first-frame history clearing, odd/even alternating phase and an existing frame-parity branch.
+- **Rate-Stable Elapsed Time (default):** `scanline_field_phase()` uses `animation_frame_clock() = max(timer,0) * 0.06`, where `timer` is milliseconds, scaled by `Field Phase Reference Rate`. The default 60 Hz setting changes phase by π every 1/60-second interval and repeats its two-state cycle at 30 Hz. PAL 50 Hz changes phase every 1/50-second interval and repeats at 25 Hz. At the matching 60 or 50 FPS cadence this reproduces the former per-frame sequence; at other rates the underlying temporal rate remains stable while rendered samples may still alias.
+- **Legacy Frame Counter:** uses `FCount` parity and changes between 0 and π on successive rendered frames. Its temporal frequency therefore follows the render rate (two-state cycle at half the rendered FPS).
+
+In both modes, the odd/even states are displaced by exactly half a scanline period. The complete procedural beam pattern changes phase globally; it does not model a single physical beam travelling from top to bottom and does not reconstruct actual interlaced fields.
+
+The shader intentionally retains two time sources:
+
+- `timer` supplies continuous elapsed-time animation: rolling scanlines, rate-stable field phase, grain interpolation, wobble and other animated effects.
+- `FCount` remains for history initialization, the Legacy Frame Counter mode and a separate diagnostic frame-parity branch.
+
+The combination of enabled-by-default Alternating Field Phase and Rolling Scanlines produces time-varying phase motion and can create visible flicker. The `temporal_phase_help` UI legend explicitly warns that this may cause eye strain or dizziness in sensitive viewers and recommends disabling either or both effects if uncomfortable.
 
 ### 7.7 Experimental: Field-Phase Flicker
 
-The **Experimental** category contains `Field-Phase Flicker`, off by default, followed by a deliberately short persistent legend. The UI legend says: `Enable for a very fast, pronounced CRT-like flicker. It may cause eye strain or dizziness; use at your discretion.` Keep the full technical explanation in the tooltip and this document, not in the visible legend.
+The **Experimental** category contains `Field-Phase Flicker`, off by default, followed by a concise persistent comfort/motion legend. The full tooltip explains the forced beam model and both timing selectors. Keep the UI note visible and explicit because Alternating Field Phase and Rolling Scanlines are already enabled in the normal default configuration.
 
-When enabled, the mode overrides all **12 user-adjustable Scanlines & Beam settings**. It forces:
+When enabled, the mode overrides the 12 original beam/model controls. It forces:
 
 - `Scanline Strength`: `1.7`, which keeps vertical beam modulation active.
 - `Vertical Beam Model`: Per-source-line RGB.
@@ -558,20 +585,20 @@ When enabled, the mode overrides all **12 user-adjustable Scanlines & Beam setti
 - `Rolling Scanlines`: Off.
 - `Alternating Field Phase`: On.
 
-The remaining adjustable values are pinned to the saved section defaults: sharpness `1.0`; widening `0.75`; current response `0.50`; average drive `0.15`; horizontal spot width `0.15`; Manual Scanline Density `340`; Match Scanlines to Native Resolution off. The hidden selector defaults are also forced to Gaussian Beam / Gaussian / Single Lobe while this mode is active. The Sine, Super-Gaussian, Lorentzian and Core + Tail implementations remain in the source but are not used by the forced mode. The UI uniforms are not overwritten; effective `PX_...` values are used for rendering so the user's own selections resume when the mode is disabled.
+The remaining original adjustable beam values are pinned to the saved section defaults: sharpness `1.0`; widening `0.75`; current response `0.50`; average drive `0.15`; horizontal spot width `0.15`; Manual Scanline Density `340`; Match Scanlines to Native Resolution off. The hidden selector defaults are also forced to Gaussian Beam / Gaussian / Single Lobe while this mode is active. `Field Phase Timing` and `Field Phase Reference Rate` are not overridden: Rate-Stable Elapsed Time at 60 Hz remains the default, PAL 50 Hz remains selectable, and Legacy Frame Counter remains available as an explicit alternative. The Sine, Super-Gaussian, Lorentzian and Core + Tail implementations remain in the source but are not used by the forced mode. The UI uniforms are not overwritten; effective `PX_...` values are used for rendering so the user's own selections resume when the mode is disabled.
 
 The rapid flicker follows from the interaction of the forced Gaussian Per-source-line RGB model and alternating phase:
 
-1. The per-source-line path reconstructs the vertical image from nearby beam-line samples at the selected pitch (Field-Phase Flicker forces Manual density `340`), evaluating separate red, green and blue channel weights with the forced Gaussian spot profile.
-2. `PX_INTERLACE` is forced on. `FCount` parity selects phase `0` for one parity and `π` for the other.
-3. In the Per-source-line RGB path, `beam_line_shift = (beam_rolling_phase - beam_field_phase) / (2π)`. With Rolling Scanlines off, `beam_rolling_phase` is zero, so the `π` phase difference becomes a `0.5`-cycle displacement in `beam_coordinate` on alternating frames.
-4. The selected beam-line sampling positions stay anchored to the active pitch grid, but the shifted beam coordinate changes the signed distances and redistributes the Gaussian weights assigned to neighbouring samples on each successive frame. In Field-Phase Flicker, that grid is Manual density `340`, not the native raster grid; only Native pitch aligns the sampling positions with actual native raster rows.
+1. The per-source-line path reconstructs the vertical image from nearby beam-line samples at the forced Manual density `340`, evaluating separate red, green and blue channel weights with the forced Gaussian spot profile.
+2. `PX_INTERLACE` is forced on and `PX_SCANROLL` is forced off.
+3. `scanline_field_phase()` supplies the selected timing: Rate-Stable Elapsed Time advances between 0 and π at 30 Hz with the default 60 Hz reference or 25 Hz with PAL 50 Hz; Legacy Frame Counter alternates on successive rendered frames.
+4. In the Per-source-line RGB path, the π difference becomes a `0.5`-cycle displacement in `beam_coordinate`; source-line sample positions stay anchored while their Gaussian weights are redistributed between neighbouring samples.
 
-This produces the pronounced CRT-like flicker that can look like scanlines moving extremely quickly from top to bottom. Strictly, the shader does **not** sweep one beam sequentially down the screen: it changes the phase of the complete screen-space pattern globally between rendered frames. The forced `Manual Scanline Density = 340` sets the pattern's spatial density, not its temporal speed or a monitor refresh rate. With Rolling Scanlines off, the rapid alternation is driven by `FCount` parity. At 60 rendered FPS, the phase changes every frame and the two-state pattern repeats at 30 Hz; at a rendered rate of `F` FPS, the two-state cycle repeats at `F/2` Hz. Actual presentation depends on frame pacing and display refresh.
+This produces a pronounced CRT-like flicker that can look like scanlines moving extremely quickly. Strictly, the shader does **not** sweep one beam sequentially down the screen: it changes the phase of the complete screen-space pattern globally. The forced Manual Scanline Density `340` sets spatial pattern density, not temporal speed or monitor refresh rate. The selected timing mode determines the underlying phase cadence, while frame pacing and display refresh determine how it is presented.
 
-Display profile, mask, brightness, contrast, ghosting, halation, bloom and grain can change the flicker's visual prominence but do not set its phase timing. Post-Display attenuation affects where the channel factor enters the color pipeline, not the flicker clock. The ordinary Scanlines & Beam selections are preserved and resume unchanged when the toggle is disabled.
+Display profile, mask, brightness, contrast, ghosting, halation, bloom and grain can change the flicker's visual prominence but do not set its phase clock. Post-Display attenuation affects where the channel factor enters the color pipeline, not phase timing. The ordinary Scanlines & Beam selections are preserved and resume unchanged when the toggle is disabled.
 
-The effect may cause eye strain or dizziness for some viewers. It is worth experimenting with in motion while considering viewing comfort; the mode is intentionally off by default. It is a global procedural phase alternation, not a physical top-to-bottom beam sweep, actual 480i or independent odd/even field reconstruction.
+Both this mode and the normal Alternating Field Phase/Rolling Scanlines combination can be uncomfortable for some viewers. The mode remains off by default; the shader uses a warning rather than claiming a physically accurate raster sweep or true 480i.
 
 ## 8. Phosphor masks and damping wires
 
@@ -709,13 +736,15 @@ s=\operatorname{sat}\left(\frac{Y}{Y-C_{min}}\right),\qquad
 C'=Y+(C-Y)s
 \]
 
-This preserves approximate hue and luminance better than clipping each negative channel independently. Positive values above 1 are left to the existing highlight roll-off.
+This preserves approximate hue and luminance better than clipping each negative channel independently. This profile-matrix gamut handling is separate from the final highlight-gamut operation in `filmic()`.
+
+The final `Highlight Gamut Handling` selector addresses the opposite SDR boundary: a tone-mapped bright color can have all nonnegative components but still exceed 1 in one channel. **Luminance-Preserving** (default) reduces chroma toward the mapped neutral axis until the peak fits 1 while retaining the tone-mapped Rec.709 luminance. **Hue-Preserving (Legacy)** instead scales all channels by the peak, retaining channel ratios at the cost of luminance. The selector is only active when the tone-mapped RGB peak exceeds 1.
 
 The Saturation control interpolates between the transformed color and the selected profile's own neutral-white vector normalized to unit Rec.709 luminance. For Japanese Cool this neutral is not `(1,1,1)` in BT.709 coordinates; mixing toward equal RGB would pull its white back toward D65. This profile-relative neutral axis is deliberate.
 
-### 9.9 Locked selective warm-color desaturation
+### 9.9 Warm-hue desaturation
 
-A compile-time feature in the final composite evaluates hue in an approximate display-referred view (`pow(saturate(linearRGB), 1/2.2)`) and applies a limited saturation reduction to a warm hue interval. It avoids near-neutral pixels where hue is unstable. The reduction is applied to the original linear RGB toward equal-luminance neutral, preserving Rec.709 luminance. Its hue centre/range/feather/reduction are locked internal constants, not user sliders. This is a subtle color trim, not a scene/object detector.
+`Warm Hue Desaturation` exposes the former fixed selective warm/red trim. It defaults On, with `Warm Desaturation Amount = 0.4`, preserving the earlier compile-time settings. Hue is evaluated in an approximate display-referred view (`pow(saturate(linearRGB), 1/2.2)`) around a fixed red hue centre (`0°`) with no hard core range and a `50°` feather into neighbouring orange/magenta tones. Near-neutral pixels are protected because their hue is unstable. The selected saturation reduction is applied to linear RGB toward equal-luminance neutral, preserving Rec.709 luminance. The amount slider ranges from `0` to `0.4`; `0` disables the adjustment. This selects colors, not objects or screen regions.
 
 ## 10. Ghosting, halation, bloom, vignette, fringing and flicker
 
@@ -739,15 +768,15 @@ centre  0.2270270270
 
 Halation is extracted from the **completed CRT emission**, after source reconstruction, beam, phosphor mask, damping wires, display color transform, contrast/saturation, vignette, scanline modulation and brightness. This is important: the blur source represents the light emitted by the simulated CRT scene rather than the untouched game image.
 
-`halation_brightpass()` calculates Rec.709 luminance `Y` from `tCrtScene.rgb` and maps the selected threshold `T` into a normalized scalar bright-pass:
+`Halation Extraction` selects one of three modes:
 
-\[
-H=\operatorname{sat}\left(\frac{Y-T}{\max(1-T,0.001)}\right)
-\]
+- **Normalized Luminance (Legacy):** calculates Rec.709 luminance `Y` from `tCrtScene.rgb` and maps threshold `T` into a scalar bright-pass: `sat((Y-T)/max(1-T,0.001))`. The scalar is blurred and tinted as before.
+- **RGB-Preserving:** uses the same normalized threshold response but scales the original emitted RGB vector so its Rec.709 luminance equals that response. Bright colored objects therefore produce colored rather than neutralized highlights.
+- **RGB-Preserving + Extended (default):** additionally allows luminance above linear 1.0 to contribute to the response by adding `Extended Highlight Gain * log2(Y)`. The default gain is `0.35`; zero disables only the above-1.0 extension. This is a soft logarithmic extension, not a physically calibrated phosphor-emission curve.
 
-The scalar field receives horizontal and vertical nine-tap Gaussian blur using the shared `Horizontal Blur` / `Vertical Blur` controls. The horizontal stage retains nine evaluations because thresholding is nonlinear; pairing raw source samples before the threshold would not be equivalent to filtering the thresholded result. The vertical pass can use the exact five-fetch paired bilinear optimization for supported spacing cases because its bright-pass scalar has already been extracted.
+The RGB-preserving paths retain the highlight hue by scaling the emitted RGB vector to the target bright-pass luminance. The horizontal and vertical Gaussian blur still use the existing nine-tap kernels (with the supported vertical paired-bilinear optimization), but both radii are multiplied by `Halation Spread` (`1.25` default). This multiplier is independent: `Horizontal Blur` and `Vertical Blur` continue to control source ghosting, while `Halation Spread` changes only the glow reach. The legacy extraction mode is retained for direct A/B comparison.
 
-The final glow tint interpolates from white to warm amber `(1.0, 0.72, 0.48)` according to `Halation Warmth`.
+The final glow tint interpolates from white to warm amber `(1.0, 0.72, 0.48)` according to `Halation Warmth`, so the retained RGB hue is still affected by the selected aesthetic tint.
 
 `Halation Respects Scanlines` chooses between two compositing treatments:
 
@@ -776,7 +805,9 @@ At final composite, the blurred bloom is added to the linear CRT scene using `Bl
 
 ### 10.4 Vignette
 
-The vignette is evaluated in CRT scene/faceplate texture space. A symmetric product of distances to four image boundaries is shaped with a square root and a `0.1` floor, then blended by `Vignette Strength`. `Vignette Mapping = Symmetric Viewport` (default) normalizes `SV_Position` against DuckStation's active viewport offset and size, then evaluates the same curve in that rectangle. It gives matching mathematical falloff at the four active-image edges and does not assume the image fills the entire output buffer. `Legacy Fit` remains available and uses the retained NewPixie-derived `screen_uv` coordinates, including their existing unequal horizontal/vertical edge mapping. This is an aesthetic edge falloff, not a measured CRT luminance distribution. The selector changes only vignette coordinates; it does not alter source sampling, geometry projection or scanline pitch.
+The vignette is evaluated in CRT scene/faceplate texture space. A symmetric product of distances to four image boundaries is shaped with a square root and a `0.1` floor, then blended by `Vignette Strength`. `Vignette Mapping = Symmetric Viewport` (default) normalizes `SV_Position` against DuckStation's active viewport offset and size, then evaluates the same curve in that rectangle. It gives matching mathematical falloff at the four active-image edges and does not assume the image fills the entire output buffer. `Legacy Fit` remains available and uses the retained NewPixie-derived `screen_uv` coordinates, including their existing unequal horizontal/vertical edge mapping.
+
+`Vignette Normalization = Center-Normalized` (default) divides the original NewPixie-derived vignette multiplier by its exact centre value (`1.3 * sqrt(1.1)`, approximately `1.3635`). The centre is therefore exactly 1.0 before the strength blend, so strength attenuates the edges without acting as a centre brightness gain. `Legacy Center Gain` preserves the former unnormalized curve, including its centre boost. This is an aesthetic edge falloff, not a measured CRT luminance distribution. Neither selector alters source sampling, geometry projection or scanline pitch.
 
 ### 10.5 Color Fringing
 
@@ -798,7 +829,7 @@ where `f = flicker_amount`, `t` is the elapsed-time-derived clock wrapped for th
 
 ## 11. Grain and noise system
 
-The grain is a deterministic hash-noise process with spatial scale, RGB correlation, temporal interpolation, grid alignment, luminance adaptation, image-aware chroma and source-detail protection. It is added after tone mapping and selective warm desaturation, before the final flicker and faceplate coverage.
+The shader now has two deliberately separate noise layers. Pre-beam signal noise is a native-cell-keyed linear-light field injected after source reconstruction in `PS_SmoothV`, before beam/scanline and phosphor-mask treatment. The existing finishing grain remains a deterministic hash-noise process with spatial scale, RGB correlation, temporal interpolation, grid alignment, luminance adaptation, image-aware chroma and source-detail protection; it is added after tone mapping and selective warm desaturation, before final flicker and faceplate coverage. `Noise Placement` chooses either layer or both.
 
 ### 11.1 Deterministic hash field
 
@@ -842,7 +873,20 @@ scale_Y=lerp(1, saturate(Y)^2, adaptation)
 
 At adaptation 1, grain is heavily reduced in shadows/midtones and retains more strength near white. This is independent from Detail Protection: one depends on final image luminance; the other depends on source-grid detail metadata.
 
-The hidden `headroom_aware_grain` uniform is enabled by default (`true`) and acts as an output safeguard. Its UI toggle has been removed; keep the uniform and implementation intact. The shader computes the actual signed per-channel grain excursion after all spatial/temporal/chroma/alignment normalization and adaptation. It scales that excursion symmetrically to no more than the smaller of the current channel's distances to 0 and 1. Positive and negative excursions therefore receive the same attenuation at a given base pixel, avoiding one-sided clipping at the SDR rails and the resulting noise rectification. It needs no extra texture reads. Grain naturally weakens near black and white, and becomes zero exactly at either rail. If a maintainer sets the hidden uniform false in a development copy, the existing grain addition and final `saturate()` remain unchanged; the final clamp can then rectify noise near the boundaries.
+The hidden `headroom_aware_grain` uniform is enabled by default (`true`) and acts as an output safeguard for this finishing layer. Its UI toggle has been removed; keep the uniform and implementation intact. The shader computes the actual signed per-channel grain excursion after all spatial/temporal/chroma/alignment normalization and adaptation. It scales that excursion symmetrically to no more than the smaller of the current channel's distances to 0 and 1. Positive and negative excursions therefore receive the same attenuation at a given base pixel, avoiding one-sided clipping at the SDR rails and the resulting noise rectification. It needs no extra texture reads. Grain naturally weakens near black and white, and becomes zero exactly at either rail. If a maintainer sets the hidden uniform false in a development copy, the existing grain addition and final `saturate()` remain unchanged; the final clamp can then rectify noise near the boundaries.
+
+### 11.8 Pre-beam signal noise and placement
+
+`Noise Placement` selects the relationship between the existing finishing grain and the new signal-domain noise:
+
+- **Post-Tone-Map Grain:** preserves the former appearance; only the existing finishing grain is added after tone mapping.
+- **Pre-Beam Signal Noise:** adds the new noise after vertical source reconstruction in `PS_SmoothV`, before source mapping, ghosting composition, beam/scanline modulation and phosphor-mask treatment. This makes its texture interact with the later CRT stages.
+- **Hybrid (Both, default):** combines both layers. It is intentionally a stronger and more integrated texture experiment, not a claim that a real CRT has this exact noise process.
+
+The pre-beam noise field is keyed to native source-pixel cells, uses deterministic integer hashing and interpolates between consecutive 60 Hz-equivalent time indices. `Signal Noise Chroma` blends a shared monochrome field toward independent channel fields. `Signal Noise Line Correlation` blends in a second field keyed only by the native raster line, creating horizontal correlation while variance normalization keeps the nominal amplitude comparable. The current defaults are `Pre-Beam Signal Noise Amount = 0.018`, chroma `0.25` and line correlation `0.25`; the approximate per-channel standard deviation before headroom adaptation is `0.3 * amount`.
+
+The hidden `headroom_aware_grain` safeguard is also applied to this pre-beam field. Here the available symmetric excursion is measured against the linear accumulated-source range `[0,1.25]`, consistent with the retained input gain. Noise naturally weakens near either rail and is zero exactly at a rail. The pre-beam field does not reuse the post-tone-map grain's hidden detail-protection or image-aware-chroma processing; those remain specific to the finishing-grain path.
+
 
 ## 12. Optional screen geometry / curvature
 
@@ -973,8 +1017,12 @@ The top-level version text is `v1`. Do not reintroduce historic version-series l
 | `saturation` | `0.94` | `0–2`, `0.01` | Mixes transformed RGB toward selected-profile neutral at equal luminance. |
 | `crt_gamma` | `2.2` | `2.2–2.6`, `0.01` | Gamma parameter for the input EOTF approximation. |
 | `black_level` | `0.004` | `0–0.1`, `0.001` | Normalized input display-black reference and coordinated filmic toe. |
+| `highlight_gamut_mode` | Luminance-Preserving (`1`) | Hue-Preserving (Legacy) / Luminance-Preserving | When mapped RGB exceeds 1, either scale all channels (legacy) or compress chroma toward neutral while retaining mapped luminance. |
+| `warm_hue_desaturation` | `true` | Boolean | Enables the former fixed warm/red saturation trim. |
+| `warm_desaturation_amount` | `0.4` | `0–0.4`, `0.01` | Maximum saturation reduction in the fixed red-centred hue window. |
 | `vignette_strength` | `0.5` | `0–1.5`, `0.05` | Edge darkening in CRT scene space. |
 | `vignette_mapping` | Symmetric Viewport (`1`) | Legacy Fit / Symmetric Viewport | Selects active-viewport-normalized coordinates or fitted legacy coordinates. |
+| `vignette_normalization` | Center-Normalized (`1`) | Legacy Center Gain / Center-Normalized | Legacy preserves centre gain; normalized keeps centre multiplier exactly 1.0. |
 | `fringe_amount` | `0.15` | `0–3`, `0.05` | Per-channel source-sampling offset magnitude. |
 | `edge_zoom` | `1.0` | `1.0–1.4`, `0.001` | Crops/zooms the fitted source image; mirrored by native grain mapping. It appears at the bottom of this category in the UI. |
 
@@ -1007,7 +1055,7 @@ This category appears immediately below Source Image Filtering in the UI.
 
 ### 14.6 Scanlines & Beam
 
-The category has **12 user-adjustable settings**. There is no separate scanline-enable uniform: `Scanline Strength = 0` is the sole beam-modulation bypass. The beam-profile selectors and Core + Tail parameters are hidden, not deleted: `scanline_profile` defaults to Gaussian Beam (`1`), `beam_spot_profile` to Gaussian (`0`), and `horizontal_spot_structure` to Single Lobe (`0`); Tail Energy and Tail Width remain `2.0%` and `2.0x`. The Sine, Super-Gaussian, Lorentzian and Core + Tail algorithms remain implemented and are detailed in §7.2. The UI legend describes only the active Gaussian / Single Lobe defaults. Field-Phase Flicker overrides all 12 visible settings and forces the hidden profile choices to Gaussian Beam / Gaussian / Single Lobe while active; see §7.7.
+The category has **14 user-adjustable settings**, plus a display-only motion/comfort note. There is no separate scanline-enable uniform: `Scanline Strength = 0` is the sole beam-modulation bypass. The beam-profile selectors and Core + Tail parameters are hidden, not deleted: `scanline_profile` defaults to Gaussian Beam (`1`), `beam_spot_profile` to Gaussian (`0`), and `horizontal_spot_structure` to Single Lobe (`0`); Tail Energy and Tail Width remain `2.0%` and `2.0x`. The Sine, Super-Gaussian, Lorentzian and Core + Tail algorithms remain implemented and are detailed in §7.2. The UI legend describes only the active Gaussian / Single Lobe defaults. Field-Phase Flicker overrides the 12 original beam/model settings and forces the hidden profile choices to Gaussian Beam / Gaussian / Single Lobe; `Field Phase Timing` and `Field Phase Reference Rate` remain selectable and are not overridden. See §7.6–§7.7.
 
 | Variable | Default | Range / items | Purpose |
 |---|---:|---|---|
@@ -1021,8 +1069,11 @@ The category has **12 user-adjustable settings**. There is no separate scanline-
 | `beam_horizontal_spot` | `0.15` | `0–1`, `0.05` | Horizontal Gaussian spot sigma in output pixels at 1080p; combines with horizontal source smoothing. |
 | `scanline_lines` | `340` | `0–625`, `1` | **Manual Scanline Density:** multiplies the normalized beam coordinate `tcy`; zero selects the output-resolution-dependent NewPixie stock pitch. Not Hz or display refresh. |
 | `native_scanline_pitch` | `false` | Boolean | **Match Scanlines to Native Resolution:** uses the active viewport's UV height per DuckStation native raster line, overriding manual density when native dimensions are valid. |
-| `interlace` | `true` | Boolean | Alternates procedural beam phase on odd/even rendered frames; not true 480i. |
-| `scanroll` | `true` | Boolean | Continuous rolling phase using elapsed-time clock. |
+| `interlace` | `true` | Boolean | Enables alternating half-period field phase; timing comes from `field_phase_timing`. Not true 480i. |
+| `field_phase_timing` | Rate-Stable Elapsed Time (`1`) | Legacy Frame Counter / Rate-Stable Elapsed Time | Uses either successive rendered-frame parity or the selected elapsed-time reference rate. |
+| `field_phase_reference_rate` | 60 Hz (`0`) | 60 Hz / PAL 50 Hz | Rate-Stable mode only: π phase steps at the selected cadence, producing a 30 or 25 Hz two-state cycle. |
+| `temporal_phase_help` | Display-only note | `ui_text` | Warns that the default Alternating Field Phase plus Rolling Scanlines can produce visible flicker and may cause eye strain or dizziness in sensitive viewers; suggests disabling either or both if uncomfortable. |
+| `scanroll` | `true` | Boolean | Continuous elapsed-time rolling phase, sampled at the current render/presentation rate. |
 | `scanline_profile` | Gaussian Beam (`1`, hidden) | Sine / Gaussian Beam | Retained waveform selector; Sine branch is still implemented. |
 | `beam_spot_profile` | Gaussian (`0`, hidden) | Gaussian / Super-Gaussian / Lorentzian | Retained selected spot-profile algorithms and integrals. |
 | `horizontal_spot_structure` | Single Lobe (`0`, hidden) | Single Lobe / Core + Tail | Core + Tail branch remains implemented. |
@@ -1037,8 +1088,12 @@ Several implementation parameters remain active at fixed defaults but are hidden
 
 | Variable | Default | Range / items | Purpose |
 |---|---:|---|---|
-| `noise_amount` | `0.06` | `0–0.10`, `0.001` | Overall animated grain amplitude. |
-| `noise_luminance_adaptation` | `0.15` | `0–1`, `0.05` | Blends uniform grain with squared-luminance amplitude. |
+| `noise_placement` | Hybrid (Both, `2`) | Post-Tone-Map Grain / Pre-Beam Signal Noise / Hybrid (Both) | Selects legacy finishing grain, new pre-beam signal noise, or both. |
+| `noise_amount` | `0.06` | `0–0.10`, `0.001` | Existing animated post-tone-map finishing-grain amplitude. |
+| `signal_noise_amount` | `0.018` | `0–0.10`, `0.001` | Linear-light native-cell signal-noise amplitude before beam/mask processing. |
+| `signal_noise_chroma` | `0.25` | `0–1`, `0.05` | Shared monochrome to independent RGB noise blend for the pre-beam field. |
+| `signal_noise_line_correlation` | `0.25` | `0–1`, `0.05` | Blend toward a noise component shared along each native raster line. |
+| `noise_luminance_adaptation` | `0.15` | `0–1`, `0.05` | Blends uniform finishing grain with squared-luminance amplitude. |
 | `headroom_aware_grain` | `true` (hidden) | Boolean | Enabled by default; symmetrically bounds the actual per-channel grain excursion by available black/white headroom. UI toggle removed; implementation retained internally. |
 | `noise_chroma` | `0.71` (hidden) | `0–1`, `0.01` | **Grain Chroma:** shared monochrome to independent-RGB noise blend. |
 | `noise_animation_speed` | `1.0` | `0–1`, `0.05` | Temporal grain evolution rate. |
@@ -1063,10 +1118,13 @@ The category follows Noise & Grain in the UI. `flicker_amount` is included here 
 
 | Variable | Default | Range / step | Purpose |
 |---|---:|---|---|
-| `blur_x` | `0.5` | `0–5`, `0.25` | Horizontal source ghost and post-CRT halation blur radius. |
-| `blur_y` | `0.5` | `0–5`, `0.25` | Vertical source ghost and post-CRT halation blur radius. |
+| `blur_x` | `0.5` | `0–5`, `0.25` | Horizontal source ghost blur radius; halation uses it as a base before its separate spread multiplier. |
+| `blur_y` | `0.5` | `0–5`, `0.25` | Vertical source ghost blur radius; halation uses it as a base before its separate spread multiplier. |
 | `ghost_strength` | `0.6` | `0–3`, `0.05` | Color-separated source-blur contribution. |
 | `halation_strength` | `0.15` | `0–2`, `0.05` | Post-emission optical glow; near zero skips halation sampling. |
+| `halation_extraction_mode` | RGB-Preserving + Extended (`2`) | Normalized Luminance (Legacy) / RGB-Preserving / RGB-Preserving + Extended | Retains highlight hue; extended mode adds logarithmic response above linear luminance 1.0. |
+| `halation_extended_gain` | `0.35` | `0–1`, `0.05` | Additional log2 highlight response above 1.0 in extended mode. |
+| `halation_spread` | `1.25` | `0.25–3`, `0.05` | Multiplies halation-only horizontal and vertical blur radii; does not change ghosting. |
 | `halation_respects_scanlines` | `false` | Boolean | Off allows glow into gaps; on reapplies local scanline factor. |
 | `halation_threshold` | `0.8` | `0–0.99`, `0.01` | Completed CRT-scene linear luminance bright-pass threshold. |
 | `halation_warmth` | `0.3` | `0–1`, `0.05` | White-to-warm-amber glow tint. |
@@ -1169,14 +1227,14 @@ The shader processes DuckStation's post-render image. It does not encode/decode 
 
 ### 15.3 No true 480i field reconstruction
 
-`Alternating Field Phase` adds a π phase shift to the procedural scanline/beam pattern on alternating rendered frames. It receives no separate odd/even field buffers, field timestamps or missing-line data. `Field-Phase Flicker` makes this pattern alternate between two phases separated by half a scanline period on successive rendered frames. It forces Gaussian Per-source-line RGB and disables Rolling Scanlines, so the neighbouring source-line beam weights are redistributed at the rendered-frame rate. This produces an intentionally strong CRT-like flicker that can look like a very fast top-to-bottom movement, but the complete pattern changes phase globally rather than simulating a physical beam sweep. It is not true 480i or deinterlacing. The rapid flashing may cause eye strain or dizziness for some viewers, which is why the toggle remains off by default. See §7.7 for the calculation and timing details.
+`Alternating Field Phase` adds a π phase shift to the procedural scanline/beam pattern using the selected `Field Phase Timing` clock. The default Rate-Stable Elapsed Time mode uses the default 60 Hz reference (30 Hz two-state cycle); the selectable PAL 50 Hz reference produces a 25 Hz two-state cycle. Both are independent of render FPS, although the rendered samples can still alias. Legacy Frame Counter instead alternates on successive rendered frames. The shader receives no separate odd/even field buffers, field timestamps or missing-line data. `Field-Phase Flicker` makes the pattern alternate between two phases separated by half a scanline period using the same selected clock. It forces Gaussian Per-source-line RGB and disables Rolling Scanlines, so neighbouring source-line beam weights are redistributed at the selected clock's rate (30 Hz by default at the 60 Hz reference, 25 Hz at the PAL 50 Hz reference, or half the render FPS in Legacy Frame Counter mode). This produces an intentionally strong CRT-like flicker that can look like a very fast top-to-bottom movement, but the complete pattern changes phase globally rather than simulating a physical beam sweep. It is not true 480i or deinterlacing. Field-Phase Flicker remains off by default because of its pronounced flashing; the normal default also combines Alternating Field Phase with Rolling Scanlines and produces visible flicker. The Scanlines & Beam comfort warning notes that this may cause eye strain or dizziness in sensitive viewers and advises disabling either or both normal effects if uncomfortable. See §7.6–§7.7 for the calculation and timing details.
 
 ### 15.4 Simplified temporal behaviour
 
 - Persistence is `max(current, history * factor)` per channel, not exponential phosphor decay.
-- Alternating phase uses rendered-frame parity, while continuous animation uses elapsed time.
-- Flicker is a small mathematical modulation.
-- Grain is a deterministic hash-noise process with temporal interpolation.
+- Rate-Stable Elapsed Time field phase uses a 30 Hz two-state cycle; Legacy Frame Counter follows rendered-frame parity. Rolling phase remains elapsed-time based. Both can alias when sampled/presented at different rates.
+- Flicker is a procedural phase/brightness modulation; the shader does not track physical monitor scanout or reconstruct fields.
+- Grain uses deterministic hash-noise fields with temporal interpolation, including the new pre-beam signal-noise placement.
 - There are no independently measured RGB phosphor decay constants or true field-rate motion differences.
 
 ### 15.5 Approximate beam reconstruction
@@ -1357,17 +1415,17 @@ These are current validation priorities and possible future directions, not asse
 7. **Vertical source smoothing:** Verify internal/native scale conversion and the maximum two-native-line support at enhanced resolutions. Confirm Per-source-line RGB does not apply vertical source smoothing a second time.
 8. **Shared Beam integration:** Compare the Gaussian error-function primitive and periodic pixel-footprint integration with higher-precision integration across supported sigma, pitch and pixel-height combinations.
 9. **Per-source-line RGB:** Record stationary images and moving content over multiple frames. Inspect channel separation, support at the ±8 loop bound, edge masks, overlap and normalization. Compare stock/manual/native pitch and both attenuation stages; verify Shared Beam ignores the attenuation-stage selector.
-10. **Field phase and timer:** Verify elapsed-time rolling phase at 30/60/120/240 FPS and odd/even `FCount` parity independently. Check frame pacing and display-refresh interactions.
+10. **Field phase and timer:** Verify Rate-Stable Elapsed Time with 60 Hz and PAL 50 Hz references at 30/50/60/120/144/240 FPS, then test Legacy Frame Counter separately. Record Alternating Field Phase and Rolling Scanlines alone and together; check sampled motion, display refresh, frame pacing and the Field-Phase Flicker override. Do not equate shader update cadence with monitor scanout cadence.
 11. **Field-Phase Flicker:** Change all 12 Scanlines & Beam controls before/enabled/after the toggle. Confirm the forced Gaussian Per-source-line RGB + Post-Display combination, Scanline Strength `1.7`, Rolling off and Alternating Field Phase on. Verify the 0/π phase alternation produces a half-cycle beam-coordinate shift and the saved UI selections resume afterward. Check the short persistent legend, detailed tooltip and off-by-default state.
 12. **Scanline master switch:** Confirm disabling scanlines gives a neutral vertical beam factor while phosphor masks and damping wires remain active.
-13. **Vignette mapping:** Compare the default Symmetric Viewport at strength `0.5` with Legacy Fit at multiple viewport offsets/sizes, letterboxed output and all four corners. Confirm the debug view depicts the selected mapping.
-14. **Headroom-Aware Grain default:** Verify the hidden `true` default using near-black, near-white and midtone patches with fixed grain fields, all grain alignments, mono/RGB chroma and varied grain sizes. Confirm the actual per-channel excursion respects available headroom. There is no user-facing Off toggle.
+13. **Vignette mapping/normalization:** Compare Symmetric Viewport and Legacy Fit, then Center-Normalized and Legacy Center Gain, at multiple viewport offsets/sizes, letterboxed output and all four corners. Confirm exact centre multiplier 1.0 in normalized mode and confirm Debug View 17 follows the same geometry-mapped source coordinates as the vignette baked into the scene, including curved profiles.
+14. **Headroom-Aware Grain and Noise Placement:** Verify the hidden `true` source and finishing-noise headroom limits near black/white and midtones. Compare Post-Tone-Map Grain, Pre-Beam Signal Noise and Hybrid with fixed frame/noise seeds; inspect mask/scanline interaction, native-cell anchoring, chroma blend and line correlation.
 15. **Aperture Grille:** Compare the analytic smoothed-stripe integral to high-sample numeric integration across fractional pitch, width, gap, viewport offset, edge pixels and the 3-output-pixel period floor.
 16. **Slot/Shadow masks:** Compare 8×8 coverage against 16×16/32×32 references at representative widths, gaps, row phases and heights. Check their approximate mean-transmission compensation.
 17. **Damping wires:** Test subpixel wire positions and viewport offsets against numerical integration. Confirm they only apply to Aperture Grille and custom/default toggles are respected.
 18. **Neutral and display profiles:** Verify index-to-transform and automatic mask pairing. Neutral must bypass only the display-color transform and still receive the rest of the shader; its automatic mask is Aperture Grille.
 19. **Diagnostics 0–20:** Exercise every Debug View on/off path. Confirm source ghost blur is inspected before scratch-target reuse; halation views force only the required work; bloom views work at zero Bloom Intensity; vignette, mask+dampers and geometry coverage agree with actual scene paths.
-20. **Halation A/B:** Compare bright highlights crossing scanline gaps. Check Strength zero, zero blur axes and post-emission bright-pass source. Confirm diagnostic modes do not contaminate normal output after returning to Off.
+20. **Halation A/B:** Compare Normalized Luminance, RGB-Preserving and RGB-Preserving + Extended on saturated red/green/blue/white highlights, including values below/above linear 1.0. Sweep Extended Highlight Gain and Halation Spread independently of ghost blur; inspect bright highlights crossing scanline gaps, Strength zero, zero blur axes and diagnostic restoration.
 21. **Bloom zero path:** Check Bloom Intensity exactly 0 and >0, including Debug Views 7/8. The three quarter-resolution passes remain scheduled at zero although their normal sampling/blur paths early-out.
 22. **Ghosting/blur:** Test Ghost Strength 0, each blur axis 0, paired bilinear cases and edge fallback. Keep source ghost buffers and halation reuse order intact.
 23. **Temporal state:** Test resize, shader reload, reset, pause/resume, resolution changes, history reset and re-entry after UI changes. The shader cannot identify every arbitrary finite uninitialized history value.
@@ -1408,7 +1466,12 @@ For every meaningful shader change:
 | Subpixel Blend vs Edge-Aware vs Hybrid | Reconstruction detail, diagonals and source-cell transitions. |
 | Hidden beam-profile values in a development copy | Sine/Gaussian Beam, Gaussian/Super-Gaussian/Lorentzian and Single Lobe/Core + Tail implementations and normalization. |
 | Headroom-Aware Grain fixed-on default | Shadow/highlight headroom protection; no user-facing toggle. |
-| Symmetric Viewport vs Legacy Fit | Vignette symmetry and viewport anchoring. |
+| Symmetric Viewport vs Legacy Fit; Center-Normalized vs Legacy Center Gain | Vignette symmetry, viewport anchoring and exact centre luminance reference. |
+| Legacy vs Luminance-Preserving Highlight Gamut | Compare saturated highlights for luminance retention versus channel-ratio preservation. |
+| Warm Hue Desaturation on/off and amount | Confirm the exposed controls reproduce the previous fixed default and preserve Rec.709 luminance. |
+| Field Phase Timing and Reference Rate | Compare 60 Hz / 30 Hz and PAL 50 Hz / 25 Hz elapsed-time phase with FCount-driven per-rendered-frame alternation. |
+| Noise Placement modes | Compare post-tone-map, pre-beam and hybrid noise at identical frames and output settings. |
+| Halation extraction and spread | Compare grayscale/color/extended response and independent glow radius. |
 | Debug View 0–20 | Every diagnostic buffer and restoration to normal image. |
 | Halation plus bloom | Layered local and wide glow balance. |
 | Ghost strength 0 / blur axes 0 | Early-outs and edge cases. |
@@ -1449,14 +1512,16 @@ Line numbers move. Use function names and this map; verify the current source be
 | `build_phosphor_mask()` | Select built-in/custom mask values, pitch safeguards, integration and mean compensation. |
 | `damper_wire_*()`, `aperture_damper_transmission()` | Pixel-integrated viewport-relative aperture-grille damping wires and shared diagnostic/scene attenuation. |
 | `apply_display_color_profile()` | Six color transforms plus Neutral bypass; seven UI profile choices total. |
-| `filmic_luminance()`, `filmic()` | Black-coordinated luminance tone curve. |
-| `screen_fit_uv()`, `vignette_multiplier()` | Retained aspect/framing transform and selectable vignette mapping. |
-| `hash_noise_*()`, `spatial_grain_value()` | Deterministic spatial grain field, scale and variance normalization. |
+| `filmic_luminance()`, `filmic()` | Black-coordinated luminance tone curve plus selectable legacy hue-preserving or luminance-preserving highlight-gamut handling. |
+| `apply_selective_warm_desaturation()` | User-toggleable warm-hue saturation trim after tone mapping. |
+| `screen_fit_uv()`, `vignette_multiplier()` | Retained aspect/framing transform plus selectable vignette mapping and centre normalization. |
+| `signal_noise_hash_*()`, `animated_signal_noise_value()`, `apply_prebeam_signal_noise()` | Native-cell pre-beam noise, line-correlation blend, elapsed-time interpolation and source headroom clamp. |
+| `hash_noise_*()`, `spatial_grain_value()` | Deterministic spatial finishing-grain field, scale and variance normalization. |
 | `animated_grain_value()` | Elapsed-time grain interpolation. |
 | `grain_native_pixel_uv_size()`, `grain_source_uv()` | Native grain scale and inverse scene mapping. |
 | `grain_detail_factor()`, `aligned_grain_value()` | Detail protection and output/native/mixed grain alignment. |
 | `PS_RenderCRTScene()` | Main CRT scene generation, Per-source-line RGB or Shared Beam, ghosting, mask/profile, vignette, scanline alpha and early diagnostic views. |
-| `halation_brightpass()`, `PS_HalationBlurHorizontal/Vertical()` | Post-emission halation extraction/blur and debug views. |
+| `halation_brightpass()`, `PS_HalationBlurHorizontal/Vertical()` | Selectable scalar/RGB/extended post-emission halation extraction, independent spread and debug views. |
 | `halation_contribution()` | Halation strength, tint and optional scanline reapplication. |
 | `extract_bloom_highlights()`, `PS_ExtractBloom()` | Hue-preserving soft-knee bloom extraction and 4×4 downsample. |
 | `PS_BloomBlurHorizontal/Vertical()` | Quarter-resolution bloom Gaussian blur and zero-intensity early-outs. |
@@ -1464,8 +1529,7 @@ Line numbers move. Use function names and this map; verify the current source be
 | `project_crt_surface()` | Virtual-camera ray/height-field intersection. |
 | `crt_surface_coverage()` | Rounded faceplate boundary and anti-aliasing. |
 | `sample_crt_surface()` | Bilinear or bounded major-axis reconstruction with coverage/scanline metadata. |
-| `apply_selective_warm_desaturation()` | Locked warm-hue trim after tone mapping. |
-| `PS_CompositeBloom()` | Diagnostic dispatch, projection, halation, bloom, tone mapping, grain, flicker and SDR output. |
+| `PS_CompositeBloom()` | Diagnostic dispatch, projection, halation, bloom, tone mapping, optional finishing grain, flicker and SDR output. |
 | `technique CRT_Trinity` | Authoritative 13-pass ordering. |
 
 ## 21. Credits, game references and provenance
@@ -1490,6 +1554,6 @@ The display profiles, masks, beam reconstruction, source filtering, grain protec
 
 The simplest accurate description is:
 
-> CRT-Trinity is a highly user-configurable Sony Trinitron-inspired CRT post-processing ReShade FX shader for DuckStation, built on Mattias Gustavsson's NewPixie CRT. The entire rendering approach is guided by selected characteristics of the Sony Trinitron aperture-grille CRT family, with a cool Japanese P22-inspired default, while the saved values also express the author's personal visual preference. The current setup uses Subpixel Blend source reconstruction, Gaussian Beam scanlines, a Gaussian Single Lobe spot, Shared Beam, a Symmetric Viewport vignette, enabled-by-default Headroom-Aware Grain, Flat geometry and an Aperture Grille mask. The hidden Sine, Super-Gaussian, Lorentzian and Core + Tail implementations remain available internally. Other display profiles provide color/white-point and automatic-mask alternatives rather than separate complete television simulations. Grain, ghosting, bloom, flicker and other finishing effects are aesthetic choices where appropriate, not claims about the physical behaviour of every CRT. The shader is a screen-space post-process, not a physically complete CRT or analog-video simulation.
+> CRT-Trinity is a highly user-configurable Sony Trinitron-inspired CRT post-processing ReShade FX shader for DuckStation, built on Mattias Gustavsson's NewPixie CRT. The entire rendering approach is guided by selected characteristics of the Sony Trinitron aperture-grille CRT family, with a cool Japanese P22-inspired default, while the saved values also express the author's personal visual preference. The current experimental setup uses Subpixel Blend source reconstruction, Gaussian Beam scanlines, a Gaussian Single Lobe spot, Shared Beam, Rate-Stable Elapsed Time field phase with selectable 60 Hz / PAL 50 Hz reference, a Center-Normalized Symmetric Viewport vignette, Luminance-Preserving highlight gamut handling, enabled warm-hue desaturation, Hybrid pre-beam/post-tone-map noise, RGB-Preserving + Extended halation, Flat geometry and an Aperture Grille mask. The hidden Sine, Super-Gaussian, Lorentzian and Core + Tail implementations remain available internally. Other display profiles provide color/white-point and automatic-mask alternatives rather than separate complete television simulations. Grain, ghosting, bloom, flicker and other finishing effects are aesthetic choices where appropriate, not claims about the physical behaviour of every CRT. The shader is a screen-space post-process, not a physically complete CRT or analog-video simulation.
 
 Treat this document as the technical handoff to future AI assistants and developers. It explains what the shader currently computes, what its approximations mean, which data contracts its passes rely on, where controls take effect, what the diagnostics show and what it does not attempt to simulate. The exact `CRT-Trinity.fx` source remains authoritative. The shader is one unified implementation and should not be documented as a changelog or a collection of version-specific feature batches.
