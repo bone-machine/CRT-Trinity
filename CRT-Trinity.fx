@@ -4,7 +4,7 @@
 #define mod(x,y) (x-y*floor(x/y))
 
 // -----------------------------------------------------------------------------
-// CRT-Trinity — a mild Sony Trinitron-oriented DuckStation ReShade FX shader.
+// CRT-Trinity — a highly user-configurable Sony Trinitron-inspired CRT post-processing ReShade FX shader for DuckStation.
 // Version: v1 | Author: bone-machine
 //
 // Primary hardware/design reference: the Sony Trinitron aperture-grille CRT family,
@@ -362,15 +362,7 @@ uniform int geometry_antialiasing <
 
 // SCANLINES & BEAM --------------------------------------------------------------
 
-// Retained as a hidden compatibility gate. The UI now uses Scanline Strength = 0
-// as its sole visible way to disable beam modulation; this default remains enabled.
-uniform bool scanlines_enabled <
-    hidden = true;
-    ui_type = "boolean";
-    ui_label = "Enable Scanlines";
-    ui_category = "Scanlines & Beam";
-    ui_tooltip = "Hidden compatibility master gate. The visible Scanline Strength control can disable vertical beam modulation by setting it to 0.";
-> = true;
+// Scanline Strength is the sole beam-modulation bypass control; zero skips both beam paths.
 
 uniform int scanline_profile <
     hidden = true;
@@ -443,7 +435,7 @@ uniform int vertical_beam_model <
     ui_items = "Shared Beam\0Per-source-line RGB\0";
     ui_label = "Vertical Beam Model";
     ui_category = "Scanlines & Beam";
-    ui_tooltip = "Shared Beam derives one vertical beam from source luminance. Per-source-line RGB samples nearby source-line centres independently and derives separate red, green and blue beam contributions.";
+    ui_tooltip = "Shared Beam derives one vertical beam from source luminance. Per-source-line RGB samples nearby positions at the selected beam pitch independently and derives separate red, green and blue beam contributions.";
 > = 0;
 
 uniform int per_source_line_attenuation_stage <
@@ -658,7 +650,7 @@ uniform bool history_reset <
     ui_type = "boolean";
     ui_label = "Reset History";
     ui_category = "Signal & Temporal Effects";
-    ui_tooltip = "Hold on to clear temporal history; toggle on/off after a target resize. First frame is cleared automatically.";
+    ui_tooltip = "Enable briefly to clear accumulated temporal history, then disable it. The first frame after initialization is cleared automatically.";
 > = false;
 
 uniform float interference_strength <
@@ -993,7 +985,6 @@ uniform int field_phase_flicker_help <
 // Field-Phase Flicker pins the 12 user-adjustable Scanlines & Beam controls to their
 // documented saved defaults, then applies its explicit model/phase overrides. The beam
 // profile, spot kernel and horizontal structure default to Gaussian Beam / Gaussian / Single Lobe.
-#define PX_SCANLINES_ENABLED          (field_phase_flicker ? true  : scanlines_enabled)
 #define PX_SCANLINE_PROFILE             (field_phase_flicker ? 1     : scanline_profile)
 #define PX_SCANLINE_STRENGTH           (field_phase_flicker ? 1.7   : scanline_strength)
 #define PX_SCANLINE_SHARPNESS          (field_phase_flicker ? 1.0   : scanline_sharpness)
@@ -1019,7 +1010,7 @@ uniform int debug_view <
     ui_items = "Off\0Accumulated Frame (Linear)\0Current Input (Encoded)\0Trail Only (Linear x4)\0Counter and Toggle Test\0Phosphor Mask Only\0CRT Scene (Display View, No Bloom)\0Bloom Blur (x4)\0Bloom Extract (x4)\0Horizontal Source Reconstruction\0Vertical Source Reconstruction\0Source Detail Confidence\0Source Ghost Blur (x4)\0Scanline / Beam Factor\0Halation Bright Pass (x4)\0Halation Horizontal Blur (x4)\0Halation Blur (x4)\0Vignette Falloff\0CRT Surface Coverage\0Phosphor Mask + Damping Wires\0CRT Scene (Linear, Pre-Glow)\0";
     ui_label = "Debug View";
     ui_category = "Diagnostics";
-    ui_tooltip = "Inspect source reconstruction, detail confidence, temporal history, ghosting, beam attenuation, phosphor masks, geometry, vignette, halation and bloom. Intermediate linear-light views are tone-mapped or amplified where needed for visibility. See README.md for the full view list.";
+    ui_tooltip = "Inspect source reconstruction, detail confidence, temporal history, ghosting, beam attenuation, phosphor masks, geometry, vignette, halation and bloom. Intermediate linear-light views are tone-mapped or amplified where needed for visibility. See AGENTS.md §14.13 for the full view list.";
 > = 0;
 
 uniform int debug_view_help <
@@ -1241,19 +1232,6 @@ float edge_mask(float2 suv)
 }
 
 
-float beam_profile_value(float normalized_distance, int profile)
-{
-    float x = abs(normalized_distance);
-    if (profile == 1)
-    {
-        float x2 = x * x;
-        return exp(-0.5 * x2 * x2); // Super-Gaussian: flatter centre, sharper shoulders.
-    }
-    if (profile == 2)
-        return 1.0 / (1.0 + x * x);      // Lorentzian: broader tails.
-    return exp(-0.5 * x * x);            // Gaussian.
-}
-
 float beam_erf_approx(float x)
 {
     float ax = abs(x);
@@ -1371,7 +1349,7 @@ float beam_profile_source_line_area(float sigma, int profile)
 // Axis-specific hard validity prevents CLAMP from repeating border texels into the image.
 // The visual edge feather is applied once at the final mapped scene sample, not in both passes.
 // Internal-resolution source reconstruction -------------------------------------
-// Pixel Smoothing computes an edge-aware blend for the current internal source cell when available.
+// Pixel Smoothing selects adaptive edge-aware blending, symmetric subpixel offsets, or both.
 // Horizontal reconstruction integrates source cells with a box-convolved spot kernel;
 // the vertical source filter performs the corresponding line reconstruction. Neighboring
 // horizontal taps remain raw source cells so the 3x3 adaptive analysis is not repeated
@@ -2910,13 +2888,15 @@ float4 PS_RenderCRTScene(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
     // Algebraically identical to the legacy two-step shaping below, reusing beam_luma.
     float i = 0.15 + 0.85 * beam_luma * beam_luma;
 
-    // The Per-source-line RGB model reconstructs native source lines here,
-    // while the signal is still in the linear source domain of sSmoothV. Its RGB
+    // The Per-source-line RGB model samples selected beam-line positions here,
+    // while the signal is still in the linear source domain of sSmoothV. Only Native
+    // pitch aligns those positions with actual native raster rows; Manual/Stock pitch
+    // samples the smoothed source image at its selected spacing. Its RGB
     // beam attenuation can either remain here (Source-Domain) or be deferred to
     // the late display stage (Post-Display). Shared Beam remains unchanged.
     float per_source_beam_scanline_factor = 1.0;
     float3 per_source_beam_scanline_rgb_factor = float3(1.0, 1.0, 1.0);
-    if (PX_SCANLINES_ENABLED && PX_SCANLINE_PROFILE != 0
+    if (PX_SCANLINE_PROFILE != 0
         && PX_VERTICAL_BEAM_MODEL == 1 && PX_SCANLINE_STRENGTH > 0.0001)
     {
         float beam_tcy = scuv.y * 0.92 + 0.04;
@@ -2969,7 +2949,8 @@ float4 PS_RenderCRTScene(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
                     < beam_support_radius + 0.5 * beam_pixel_height;
                 if (overlaps_line)
                 {
-                    // Source content remains anchored to the native line; the beam
+                    // Source content is sampled at the selected beam-line position;
+                    // only Native pitch aligns it with a native raster row. The beam
                     // phase (including rolling/interlace) moves independently over it.
                     float source_line_cycles = (float)source_line + beam_phase_origin;
                     float line_scuv_y;
@@ -3175,7 +3156,7 @@ float4 PS_RenderCRTScene(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
     float scans = 1.0;
     float s = 1.0;
 
-    if (PX_SCANLINES_ENABLED && PX_SCANLINE_STRENGTH > 0.0001)
+    if (PX_SCANLINE_STRENGTH > 0.0001)
     {
         if (PX_SCANLINE_PROFILE == 0)
         {
@@ -3192,7 +3173,7 @@ float4 PS_RenderCRTScene(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
         }
         else if (PX_VERTICAL_BEAM_MODEL == 1)
         {
-            // Per-source-line RGB reconstructs each native source line independently.
+            // Per-source-line RGB reconstructs each selected beam-line sample independently.
             // Post-Display mode defers only its channel-specific beam factor to this stage.
             // The scalar is retained in alpha for Halation Respects Scanlines.
             s = per_source_beam_scanline_factor;

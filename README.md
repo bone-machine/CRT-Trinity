@@ -6,7 +6,7 @@ The shader's overall design is based on selected characteristics of the **Sony T
 
 The defaults are simply what I liked best: a cool, slightly blue-ish picture with the CRT feel I wanted. This isn't a faithful electrical or optical emulation of a particular television. Some touches—grain, ghosting and bloom—are there because I think they look good, not because every CRT behaved that way. Change anything you like; the picture should be yours.
 
-I mainly tuned the look while playing *Castlevania: Symphony of the Night* and *Metal Gear Solid* on PlayStation. **It's ready to use with [Castlevania: Symphony of the Night Ultimate](https://github.com/renanbianchi/sotn-ultimate).** The related [SotN decompilation project](https://github.com/Xeeynamo/sotn-decomp) is also a useful reference.
+I mainly tuned the look while playing *Castlevania: Symphony of the Night* and *Metal Gear Solid* on PlayStation. **It's ready to use with [Castlevania: Symphony of the Night Ultimate](https://github.com/renanbianchi/sotn-ultimate).** The related [SotN decompilation project](https://github.com/Xeeynamo/sotn-decomp) is also a useful reference. These are separate projects, not shader dependencies; CRT-Trinity does not include or distribute any game files, game code or game assets.
 
 ## Key Rendering Features
 
@@ -21,7 +21,7 @@ I mainly tuned the look while playing *Castlevania: Symphony of the Night* and *
 
 See `AGENTS.md` for the detailed mathematics, pass graph, resource handling, diagnostics and implementation notes.
 
-## Display color Profiles
+## Display Color Profiles
 
 The profile choices are grouped around a few different color characters rather than separate full television emulations:
 
@@ -53,6 +53,8 @@ The shader exposes the following controls in DuckStation.
 - **Pixel Smoothing Mode** — Subpixel Blend (default), Edge-Aware or Hybrid reconstruction.
 - **Pixel Smoothing** — strength of the selected reconstruction; `0` disables it.
 - **Horizontal Source-Pixel Smoothing** and **Vertical Source-Pixel Smoothing** — add horizontal and vertical Gaussian reconstruction width before CRT beam treatment.
+
+Subpixel Blend averages source reconstruction at small, symmetric half-offset positions on both axes. Edge-Aware uses a 3×3 neighbourhood to adapt filtering around coherent edges. Hybrid combines the two approaches.
 
 ### Screen Geometry
 

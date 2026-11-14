@@ -114,81 +114,79 @@ This is the technical handoff for the current CRT-Trinity implementation. The ac
 
 ## 3. Current defaults and out-of-box look
 
-The following table records the current saved defaults and fixed rendering choices. They represent the author's preferred appearance, not instrumented calibration. The exhaustive control/range reference is in §14.
+The following table records the current saved defaults and fixed rendering choices. They represent the author's preferred appearance, not instrumented calibration. Rows follow the DuckStation UI category order; the exhaustive control/range reference is in §14.
 
-| Setting | Current default | Meaning |
-|---|---:|---|
-| Display Color Profile | Sony Trinitron — Japanese Cool (`0`) | Cool, slightly blue Japanese P22-inspired default. |
-| Phosphor Mask Type | Use Display Profile Default (`0`) | Sony and Neutral select Aperture Grille; Toshiba AF selects Slot Mask. |
-| Active beam defaults | Gaussian Beam / Gaussian spot / Single Lobe | Hidden selectors default to these values; Sine, Super-Gaussian, Lorentzian and Core + Tail implementations remain in the shader. |
-| Scanline Beam Profile (hidden) | Gaussian Beam (`1`) | Sine (`0`) and Gaussian Beam (`1`) implementations retained; Gaussian Beam is the default. |
-| Beam Spot Profile (hidden) | Gaussian (`0`) | Gaussian (`0`), Super-Gaussian (`1`) and Lorentzian (`2`) implementations retained. |
-| Horizontal Spot Structure (hidden) | Single Lobe (`0`) | Core + Tail (`1`) remains implemented; hidden Tail Energy and Tail Width default to `2.0%` and `2.0x`. |
-| CRT Surface Profile | Flat (`0`) | Bypasses faceplate projection. |
-| Geometry Reconstruction | Bilinear (1 tap, `0`) | No adaptive multi-tap geometry filtering by default. |
-| Surface Radius | `8.0` | Default cylindrical/spherical radius. |
-| Aspherical Horizontal / Vertical Radius (hidden) | `6.0 / 12.0` | Fixed internal radii for the optional Aspherical profile; retained and hidden from the UI. |
-| Aspheric Edge Departure (hidden) | `0.015` | Fixed internal higher-order edge-depth departure; retained and hidden from the UI. |
-| Virtual Camera Distance | `4.0` | Default camera distance for curved profiles. |
-| Virtual Camera Horizontal / Vertical Offset | `0.0 / 0.0` | Centred virtual camera. |
-| Screen Corner Radius (hidden) | `0.02` | Fixed internal rounded-faceplate corner fraction; retained and hidden from the UI. |
-| Brightness | `1.1` | Post-scanline scene multiplier. |
-| Contrast Curve | `1.0` | Full blend of the existing luminance curve. |
-| Saturation | `0.94` | Slightly restrained saturation relative to the selected profile white. |
-| Gamma | `2.2` | Input BT.1886-style EOTF parameter. |
-| Black Level | `0.004` | Normalized input black reference. |
-| Edge Zoom | `1.0` | No additional crop. Located at the bottom of Image & Color. |
-| Pixel Smoothing Mode | Subpixel Blend (`1`) | Symmetric half-offset source reconstruction. |
-| Pixel Smoothing | `0.35` | Strength of the selected source-reconstruction operation. |
-| Adjacent-Tap Edge Blending (hidden) | Off (`false`) | Cached adjacent-tap implementation retained for Edge-Aware/Hybrid; hidden after the user reported no useful visible effect from the toggle. |
-| Horizontal Source-Pixel Smoothing | `0.17` | Added horizontal Gaussian width in native-pixel units. |
-| Vertical Source-Pixel Smoothing | `0.10` | Added vertical Gaussian width in native-line units. |
-
-| Scanline Strength | `1.7` | Strength of the vertical modulation; set to `0` for the user-facing beam bypass. |
-| Enable Scanlines (hidden) | On | Retained hidden compatibility/master gate; the UI no longer exposes it. New visible control is Scanline Strength, where `0` bypasses beam modulation. |
-| Vertical Beam Model | Shared Beam (`0`) | Shared luminance-driven beam model. |
-| Per-source-line RGB Attenuation | Source-Domain (`0`) | Original early RGB attenuation; Post-Display is optional and Field-Phase Flicker forces it. |
-| Vertical Beam Sharpness | `1.0` | Controls the Gaussian beam sigma. |
-| Scanline Beam Widening | `0.75` | Maximum brightness-dependent vertical widening scale. |
-| Beam Current Response | `0.50` | Exponent mapping source drive to beam widening. |
-| Beam Average Drive | `0.15` | Mean output drive of the selected normalized vertical beam profile; Gaussian is the default. |
-| Horizontal Beam Spot Width | `0.15` | Gaussian horizontal spot sigma at 1080p before internal-grid conversion. |
-| Manual Scanline Density | `340` | Spatial beam-pattern density; `0` uses the output-resolution-dependent NewPixie pitch. |
-| Match Scanlines to Native Resolution | Off | Uses DuckStation native raster dimensions when valid; overrides manual density. |
-| Alternating Field Phase | On | Half-period phase shift on alternating rendered frames. |
-| Rolling Scanlines | On | Continuous phase animation from elapsed time. |
-| Vignette Strength | `0.5` | Edge-darkening blend. |
-| Vignette Mapping | Symmetric Viewport (`1`) | Uses coordinates normalized to the active image viewport. |
-| Flicker Amount (hidden) | `0.003` | Fixed subtle final brightness modulation, retained but hidden from the UI; distinct from Field-Phase Flicker. |
-| Reset History | Off | Manual temporal-history reset control; frame 1 is cleared automatically. |
-| Color Fringing | `0.15` | Small channel-specific sample offsets. |
-| Temporal Trail Persistence | `0.0` | No retained bright-trail contribution by default. |
-| Interference Strength | `0.0` | Animated horizontal wobble disabled. A small static mapping offset remains. |
-| Interference Speed | `1.0` | 60 Hz reference-time multiplier for wobble. |
-| Noise Amount | `0.06` | Subtle animated grain. |
-| Luminance Adaptation | `0.15` | Reduces grain in darker areas. |
-| Headroom-Aware Grain (hidden) | On (`true`) | Symmetrically scales grain to available black/white headroom; enabled by default and retained internally without a UI toggle. |
-| Grain Chroma (hidden) | `0.71` | Fixed blend between shared and independent RGB noise; retained but hidden from the UI. |
-| Grain Animation Speed | `1.0` | Full nominal temporal evolution. |
-| Grain Size | `1.0` | Fine cell-based grain. |
-| Grain Alignment | Output Pixels (`0`) | Anchored to final output pixels. |
-| Detail Protection (hidden) | `0.50` | Fixed grain reduction using source-detail metadata; retained but hidden from the UI. |
-| Image-Aware Chroma (hidden) | `0.25` | Fixed adaptation of chromatic grain to image saturation; retained but hidden from the UI. |
-| Horizontal / Vertical Blur | `0.5 / 0.5` | Shared blur radii for source ghosting and halation. |
-| Ghost Strength | `0.6` | color-separated source-blur contribution. |
-| Halation Strength | `0.15` | Post-emission optical glow. |
-| Halation Respects Scanlines | Off | Glow can spread into scanline gaps. |
-| Halation Threshold | `0.8` | Bright-pass threshold against completed CRT-scene luminance. |
-| Halation Warmth | `0.3` | White-to-amber glow tint blend. |
-| Bloom Intensity | `0.15` | Wider highlight contribution. |
-| Bloom Threshold | `4.0` | Highlight peak threshold in linear scene values. |
-| Bloom Soft Knee | `0.15` | Soft transition around the bloom threshold. |
-| Bloom Radius | `8` | Approximate reach in pixels at 1080p. |
-| Field-Phase Flicker | Off | Experimental fast global half-period phase alternation; see §7.7. |
-| Aperture Grille Custom Defaults | `0.24`, `3.0`, `0.95`, `0.10`; wires Off, strength `0.05` | Mask strength, pitch, stripe width, gap, optional wires and wire strength. |
-| Slot Mask Custom Defaults | `0.40`, `4.0`, `0.60`, `0.50`, `1.0` | Mask strength, pitch, slot width, gap and slot height. |
-| Shadow Mask Custom Defaults | `0.24`, `3.0`, `0.95`, `0.10` | Mask strength, pitch, dot width and gap. |
-| Debug View | Off (`0`) | Normal rendering; 20 additional intermediate inspection views are available. |
+| UI Category | Setting | Current default | Meaning |
+|---|---|---:|---|
+| Display Setup | Display Color Profile | Sony Trinitron — Japanese Cool (`0`) | Cool, slightly blue Japanese P22-inspired default. |
+| Display Setup | Phosphor Mask Type | Use Display Profile Default (`0`) | Sony and Neutral select Aperture Grille; Toshiba AF selects Slot Mask. |
+| Image & Color | Brightness | `1.1` | Post-scanline scene multiplier. |
+| Image & Color | Contrast Curve | `1.0` | Full blend of the existing luminance curve. |
+| Image & Color | Saturation | `0.94` | Slightly restrained saturation relative to the selected profile white. |
+| Image & Color | Gamma | `2.2` | Input BT.1886-style EOTF parameter. |
+| Image & Color | Black Level | `0.004` | Normalized input black reference. |
+| Image & Color | Vignette Strength | `0.5` | Edge-darkening blend. |
+| Image & Color | Vignette Mapping | Symmetric Viewport (`1`) | Uses coordinates normalized to the active image viewport. |
+| Image & Color | Color Fringing | `0.15` | Small channel-specific sample offsets. |
+| Image & Color | Edge Zoom | `1.0` | No additional crop. |
+| Source Image Filtering | Pixel Smoothing Mode | Subpixel Blend (`1`) | Symmetric half-offset source reconstruction; Edge-Aware and Hybrid remain selectable. |
+| Source Image Filtering | Pixel Smoothing | `0.35` | Strength of the selected source-reconstruction operation. |
+| Source Image Filtering | Adjacent-Tap Edge Blending (hidden) | Off (`false`) | Cached adjacent-tap implementation retained for Edge-Aware/Hybrid; hidden after the user reported no useful visible effect from the toggle. |
+| Source Image Filtering | Horizontal Source-Pixel Smoothing | `0.17` | Added horizontal Gaussian width in native-pixel units. |
+| Source Image Filtering | Vertical Source-Pixel Smoothing | `0.10` | Added vertical Gaussian width in native-line units. |
+| Screen Geometry | CRT Surface Profile | Flat (`0`) | Bypasses faceplate projection. |
+| Screen Geometry | Geometry Reconstruction | Bilinear (1 tap, `0`) | No adaptive multi-tap geometry filtering by default. |
+| Screen Geometry | Surface Radius | `8.0` | Default cylindrical/spherical radius. |
+| Screen Geometry | Aspherical Horizontal / Vertical Radius (hidden) | `6.0 / 12.0` | Fixed internal radii for the optional Aspherical profile; retained and hidden from the UI. |
+| Screen Geometry | Aspheric Edge Departure (hidden) | `0.015` | Fixed internal higher-order edge-depth departure; retained and hidden from the UI. |
+| Screen Geometry | Virtual Camera Distance | `4.0` | Default camera distance for curved profiles. |
+| Screen Geometry | Virtual Camera Horizontal / Vertical Offset | `0.0 / 0.0` | Centred virtual camera. |
+| Screen Geometry | Screen Corner Radius (hidden) | `0.02` | Fixed internal rounded-faceplate corner fraction; retained and hidden from the UI. |
+| Scanlines & Beam | Active beam defaults | Gaussian Beam / Gaussian spot / Single Lobe | Hidden selectors default to these values; Sine, Super-Gaussian, Lorentzian and Core + Tail implementations remain in the shader. |
+| Scanlines & Beam | Scanline Beam Profile (hidden) | Gaussian Beam (`1`) | Sine (`0`) and Gaussian Beam (`1`) implementations retained; Gaussian Beam is the default. |
+| Scanlines & Beam | Beam Spot Profile (hidden) | Gaussian (`0`) | Gaussian (`0`), Super-Gaussian (`1`) and Lorentzian (`2`) implementations retained. |
+| Scanlines & Beam | Horizontal Spot Structure (hidden) | Single Lobe (`0`) | Core + Tail (`1`) remains implemented; hidden Tail Energy and Tail Width default to `2.0%` and `2.0x`. |
+| Scanlines & Beam | Scanline Strength | `1.7` | Strength of vertical modulation; set to `0` for the user-facing beam bypass. |
+| Scanlines & Beam | Vertical Beam Model | Shared Beam (`0`) | Shared luminance-driven beam model. |
+| Scanlines & Beam | Per-source-line RGB Attenuation | Source-Domain (`0`) | Original early RGB attenuation; Post-Display is optional and Field-Phase Flicker forces it. |
+| Scanlines & Beam | Vertical Beam Sharpness | `1.0` | Controls the Gaussian beam sigma. |
+| Scanlines & Beam | Scanline Beam Widening | `0.75` | Maximum brightness-dependent vertical widening scale. |
+| Scanlines & Beam | Beam Current Response | `0.50` | Exponent mapping source drive to beam widening. |
+| Scanlines & Beam | Beam Average Drive | `0.15` | Mean output drive of the selected normalized vertical beam profile; Gaussian is the default. |
+| Scanlines & Beam | Horizontal Beam Spot Width | `0.15` | Gaussian horizontal spot sigma at 1080p before internal-grid conversion. |
+| Scanlines & Beam | Manual Scanline Density | `340` | Spatial beam-pattern density; `0` uses the output-resolution-dependent NewPixie pitch. |
+| Scanlines & Beam | Match Scanlines to Native Resolution | Off | Uses DuckStation native raster dimensions when valid; overrides manual density. |
+| Scanlines & Beam | Alternating Field Phase | On | Half-period phase shift on alternating rendered frames. |
+| Scanlines & Beam | Rolling Scanlines | On | Continuous phase animation from elapsed time. |
+| Noise & Grain | Noise Amount | `0.06` | Subtle animated grain. |
+| Noise & Grain | Luminance Adaptation | `0.15` | Reduces grain in darker areas. |
+| Noise & Grain | Headroom-Aware Grain (hidden) | On (`true`) | Symmetrically scales grain to available black/white headroom; enabled by default and retained internally without a UI toggle. |
+| Noise & Grain | Grain Chroma (hidden) | `0.71` | Fixed blend between shared and independent RGB noise; retained but hidden from the UI. |
+| Noise & Grain | Grain Animation Speed | `1.0` | Full nominal temporal evolution. |
+| Noise & Grain | Grain Size | `1.0` | Fine cell-based grain. |
+| Noise & Grain | Grain Alignment | Output Pixels (`0`) | Anchored to final output pixels. |
+| Noise & Grain | Detail Protection (hidden) | `0.50` | Fixed grain reduction using source-detail metadata; retained but hidden from the UI. |
+| Noise & Grain | Image-Aware Chroma (hidden) | `0.25` | Fixed adaptation of chromatic grain to image saturation; retained but hidden from the UI. |
+| Signal & Temporal Effects | Flicker Amount (hidden) | `0.003` | Fixed subtle final brightness modulation, retained but hidden from the UI; distinct from Field-Phase Flicker. |
+| Signal & Temporal Effects | Reset History | Off | Manual temporal-history reset control; frame 1 is cleared automatically. |
+| Signal & Temporal Effects | Temporal Trail Persistence | `0.0` | No retained bright-trail contribution by default. |
+| Signal & Temporal Effects | Interference Strength | `0.0` | Animated horizontal wobble disabled. A small static mapping offset remains. |
+| Signal & Temporal Effects | Interference Speed | `1.0` | 60 Hz reference-time multiplier for wobble. |
+| Glow & Ghosting | Horizontal / Vertical Blur | `0.5 / 0.5` | Shared blur radii for source ghosting and halation. |
+| Glow & Ghosting | Ghost Strength | `0.6` | Color-separated source-blur contribution. |
+| Glow & Ghosting | Halation Strength | `0.15` | Post-emission optical glow. |
+| Glow & Ghosting | Halation Respects Scanlines | Off | Glow can spread into scanline gaps. |
+| Glow & Ghosting | Halation Threshold | `0.8` | Bright-pass threshold against completed CRT-scene luminance. |
+| Glow & Ghosting | Halation Warmth | `0.3` | White-to-amber glow tint blend. |
+| Bloom | Bloom Intensity | `0.15` | Wider highlight contribution. |
+| Bloom | Bloom Threshold | `4.0` | Highlight peak threshold in linear scene values. |
+| Bloom | Bloom Soft Knee | `0.15` | Soft transition around the bloom threshold. |
+| Bloom | Bloom Radius | `8` | Approximate reach in pixels at 1080p. |
+| Phosphor Mask Settings | Aperture Grille Custom Defaults | `0.24`, `3.0`, `0.95`, `0.10`; wires Off, strength `0.05` | Mask strength, pitch, stripe width, gap, optional wires and wire strength. |
+| Phosphor Mask Settings | Slot Mask Custom Defaults | `0.40`, `4.0`, `0.60`, `0.50`, `1.0` | Mask strength, pitch, slot width, gap and slot height. |
+| Phosphor Mask Settings | Shadow Mask Custom Defaults | `0.24`, `3.0`, `0.95`, `0.10` | Mask strength, pitch, dot width and gap. |
+| Experimental | Field-Phase Flicker | Off | Experimental fast global half-period phase alternation; see §7.7. |
+| Diagnostics | Debug View | Off (`0`) | Normal rendering; 20 additional intermediate inspection views are available. |
 
 Built-in mask defaults are internal constants selected when `Use Display Profile Default` is active. They are not the same as the editable values in the three mask-specific groups within the single `Phosphor Mask Settings` UI category. The custom values are documented in §14.11.
 
@@ -357,7 +355,11 @@ This behaviour was important in the *Symphony of the Night* Save Room comparison
 
 ### 6.2 Edge-aware Pixel Smoothing and detail analysis
 
-`Pixel Smoothing Mode` defaults to **Subpixel Blend (`1`)**. That mode applies symmetric half-offset sampling in the horizontal and vertical source-reconstruction passes, with the offset controlled by `Pixel Smoothing`. The Edge-Aware mode and the Edge-Aware component of Hybrid are optional alternatives. The following analysis describes that adaptive path; its detail-confidence output can also be used independently by grain protection.
+`Pixel Smoothing Mode` defaults to **Subpixel Blend (`1`)**. It averages the horizontal source-cell reconstruction kernel at two symmetric positions and does the same with the vertical source-line kernel. Each position is offset by `±0.5 * Pixel Smoothing` output pixels from the unshifted coordinate. The offset is therefore expressed in output-pixel units, then converted to the active internal/native source grid; its displacement occupies a smaller fraction of a source cell as the output-to-source scale grows. At the default strength of `0.35`, each side is offset by `0.175` output pixels.
+
+When the Gaussian/beam width on an axis is effectively zero, that pass falls back to the average of two linearly filtered samples at the same symmetric offsets. In **Hybrid** mode, this zero-width fallback is mixed 50/50 with the unshifted Edge-Aware result. With non-zero width, Hybrid combines the Edge-Aware centre-cell contribution with the symmetrically offset integrated reconstruction kernel; it is not a simple 50/50 blend in that path. **Edge-Aware** uses the adaptive 3×3 reconstruction described below. **Hybrid** enables both approaches. The default Subpixel Blend mode does not apply the adaptive edge-aware color blend, although the 3×3 neighbourhood analysis can still run to generate detail-confidence metadata for grain protection.
+
+The following analysis describes the adaptive Edge-Aware path; its detail-confidence output can also be used independently by grain protection.
 
 `PS_SmoothH()` selects the current internal-grid source cell and, when `pixel_smoothing` or `noise_detail_protection` is active, samples a clamped 3×3 neighbourhood. This neighbourhood serves two related purposes: the adaptive reconstruction blend and the source-detail confidence later used by grain protection.
 
@@ -409,7 +411,7 @@ The requested blend is `pixel_smoothing * lerp(0.30, 1.0, edge_activity)`. This 
 
 Detail confidence is independent of whether the Pixel Smoothing blend is used. The shader finds the largest of the eight local comparison distances, maps it through `smoothstep(0.025, 0.16, local_detail)`, and combines it with `0.75 * edge_activity` using `max()`. This protects isolated dots and irregular texture as well as coherent edges. The same metadata is passed to the vertical filter for the final grain stage.
 
-By default, only the centre contribution receives the adaptive 3×3 blend. Adjacent source cells used by the horizontal reconstruction remain raw source samples; the shader does not repeat the full tensor calculation for every horizontal tap. The left/right samples from the neighbourhood are cached and reused by adjacent convolution taps.
+When Edge-Aware or Hybrid is selected, only the centre contribution receives the adaptive 3×3 blend. Adjacent source cells used by the horizontal reconstruction remain raw source samples unless the hidden Adjacent-Tap Edge Blending option is enabled; the shader does not repeat the full tensor calculation for every horizontal tap. The left/right samples from the neighbourhood are cached and reused by adjacent convolution taps. Subpixel Blend, the default mode, does not apply this adaptive color blend.
 
 The retained `adjacent_tap_edge_blending` implementation extends this to the immediate horizontal taps (`-1` and `+1`). It builds a smaller structure tensor from the two cached columns and three cached rows available for each adjacent tap, then blends that tap using five cached neighbours plus its target sample. The left and right filters are oriented toward the central column. This is a six-sample/two-column approximation, not a full 3×3 filter centred on each adjacent tap. It adds no texture fetches, but it adds comparison, tensor and weighting arithmetic when enabled. It is active only in Edge-Aware and Hybrid Pixel Smoothing modes. The uniform is hidden from the UI and defaults to `false`; the user reported no useful visible difference from the former toggle, so do not expose it again without a targeted visual test. Keep the code and dependencies intact.
 
@@ -453,7 +455,7 @@ The **Scanlines & Beam** category exposes 12 adjustable settings for strength, v
 
 ### 7.1 Scanline Strength as the on/off control
 
-There is no separate scanline-enable control in the UI. The original `scanlines_enabled` uniform remains in the shader with `hidden = true` and a default of `true` as a compatibility/master gate; retain it for existing presets and future maintenance. `Scanline Strength` is the sole user-facing on/off control: setting it to `0` bypasses the vertical beam calculations even while the hidden gate is true, leaving the effective scanline multiplier at `1.0`. Phosphor masks and damping wires are separate structures and remain active. Halation, ghosting, vignette, grain and other effects also remain active. The rendering paths test both the hidden compatibility gate and effective strength before doing their beam calculations; Field-Phase Flicker forces the hidden gate on and supplies its fixed effective strength of `1.7` while active.
+There is no separate scanline-enable uniform or UI control. The former `scanlines_enabled` uniform has been removed, so any saved value from an older configuration is ignored. `Scanline Strength` is the sole on/off control: setting it to `0` bypasses both vertical beam attenuation paths and leaves the effective scanline multiplier at `1.0`. Phosphor masks and damping wires are separate structures and remain active; halation, ghosting, vignette, grain and other effects also remain active. Field-Phase Flicker temporarily overrides the saved strength with `1.7` while enabled, so it also overrides a saved zero strength until disabled.
 
 ### 7.2 Retained beam and spot profile implementations
 
@@ -488,14 +490,14 @@ The selected Gaussian-family spot is integrated over the complete vertical footp
 
 ### 7.4 Per-source-line RGB beam model
 
-**Per-source-line RGB** is an alternative vertical reconstruction algorithm; it does not replace Shared Beam. It samples nearby native source lines independently rather than deriving one shared current from the current pixel's luminance.
+**Per-source-line RGB** is an alternative vertical reconstruction algorithm; it does not replace Shared Beam. It samples nearby beam-line positions independently rather than deriving one shared current from the current pixel's luminance. The positions follow the selected pitch: Native mode aligns them with DuckStation's native raster rows, while Manual density (the default route) and Stock pitch place beam-line samples at their own spatial spacing and interpolate the already-smoothed source image.
 
 For each output pixel the model:
 
 1. Computes the beam coordinate using the selected native/manual/stock pitch and current field/rolling phase.
-2. Finds the central source-line index and a bounded support radius for the selected spot profile: ±4σ for Gaussian/Super-Gaussian and a fixed ±5.5-line support for Lorentzian.
-3. Iterates nearby source-line centres, up to the fixed ±8-line loop bound, and includes a line only when its selected-profile support overlaps the output pixel's vertical footprint.
-4. Maps each source-line centre through the selected pitch transform and samples `tSmoothV`. Red, green and blue are read from their corresponding source channel.
+2. Finds the central beam-line index and a bounded support radius for the selected spot profile: ±4σ for Gaussian/Super-Gaussian and a fixed ±5.5-line support for Lorentzian.
+3. Iterates nearby beam-line centres, up to the fixed ±8-line loop bound, and includes a line only when its selected-profile support overlaps the output pixel's vertical footprint.
+4. Maps each beam-line centre through the selected pitch transform and samples `tSmoothV`. Red, green and blue are read from their corresponding source channel. Only Native pitch aligns these centres with the game's actual native raster rows; Manual density and Stock pitch interpolate the smoothed source image at the selected beam spacing.
 5. Derives three separate current responses:
 
 \[
@@ -524,7 +526,7 @@ The source has already passed through `PS_SmoothV`; the beam model does not repe
 The scanline coordinate has three routes:
 
 1. **Stock pitch:** if native matching is off and `Manual Scanline Density` (`scanline_lines`) is `0` or at most `0.5`, use the retained NewPixie-derived phase `screen_uv.y * screen_size.y * 1.5`. This is output-resolution-dependent: the number of beam periods changes with output pixel height.
-2. **Manual density:** if native matching is off and the value is above `0.5`, use `tcy * ManualScanlineDensity`, where `tcy = scuv.y * 0.92 + 0.04`. This controls spatial beam-pattern density, not a temporal frequency. Across the nominal `tcy` interval (`0.04–0.96`), the default `340` produces about `0.92 * 340 = 312.8` beam periods; framing/zoom and the mapped viewport coordinate determine the exact visible count. The value is not measured in Hz and has no relationship to monitor refresh (including a 240 Hz display).
+2. **Manual density:** if native matching is off and the value is above `0.5`, use `tcy * ManualScanlineDensity`, where `tcy = scuv.y * 0.92 + 0.04`. This controls spatial beam-pattern density, not a temporal frequency. At `Edge Zoom = 1.0`, the vertical fit transform expands `scuv.y` slightly beyond `[0,1]` (approximately `-0.0411–1.0411`), so `tcy` spans approximately `0.0022–0.9978`. The default `340` therefore produces about `338.5` beam periods across the visible height—effectively about 340. The earlier `312.8` calculation used only the nominal `0.04–0.96` interval and omitted the fit-transform extension. Edge Zoom and viewport mapping change the exact visible count. The value is not measured in Hz and has no relationship to monitor refresh.
 3. **Native pitch:** if `Match Scanlines to Native Resolution` is on and DuckStation supplies valid `NativeWidth` and `NativeHeight`, derive the pitch from `source_native_pixel_size_uv().y`, which is the active viewport's UV height per native raster line. This tracks DuckStation's native raster, not an enhanced internal render grid or the output monitor's refresh rate.
 
 Native mode takes precedence over manual density when valid native dimensions are available. If either native dimension is unavailable, rendering falls back to the manual/stock route. CRT scanline pitch deliberately stays tied to native source dimensions even though source reconstruction can use the finer internal render dimensions. `Manual Scanline Density = 0` is retained as the output-resolution-dependent NewPixie fallback; the saved default is `340`.
@@ -560,10 +562,10 @@ The remaining adjustable values are pinned to the saved section defaults: sharpn
 
 The rapid flicker follows from the interaction of the forced Gaussian Per-source-line RGB model and alternating phase:
 
-1. The per-source-line path reconstructs the vertical image from nearby native source-line contributions, evaluating separate red, green and blue channel weights with the forced Gaussian spot profile.
+1. The per-source-line path reconstructs the vertical image from nearby beam-line samples at the selected pitch (Field-Phase Flicker forces Manual density `340`), evaluating separate red, green and blue channel weights with the forced Gaussian spot profile.
 2. `PX_INTERLACE` is forced on. `FCount` parity selects phase `0` for one parity and `π` for the other.
 3. In the Per-source-line RGB path, `beam_line_shift = (beam_rolling_phase - beam_field_phase) / (2π)`. With Rolling Scanlines off, `beam_rolling_phase` is zero, so the `π` phase difference becomes a `0.5`-cycle displacement in `beam_coordinate` on alternating frames.
-4. The native source-line sampling grid stays anchored to the raster, but the shifted beam coordinate changes the signed distances and redistributes the Gaussian weights assigned to neighbouring source lines on each successive frame.
+4. The selected beam-line sampling positions stay anchored to the active pitch grid, but the shifted beam coordinate changes the signed distances and redistributes the Gaussian weights assigned to neighbouring samples on each successive frame. In Field-Phase Flicker, that grid is Manual density `340`, not the native raster grid; only Native pitch aligns the sampling positions with actual native raster rows.
 
 This produces the pronounced CRT-like flicker that can look like scanlines moving extremely quickly from top to bottom. Strictly, the shader does **not** sweep one beam sequentially down the screen: it changes the phase of the complete screen-space pattern globally between rendered frames. The forced `Manual Scanline Density = 340` sets the pattern's spatial density, not its temporal speed or a monitor refresh rate. With Rolling Scanlines off, the rapid alternation is driven by `FCount` parity. At 60 rendered FPS, the phase changes every frame and the two-state pattern repeats at 30 Hz; at a rendered rate of `F` FPS, the two-state cycle repeats at `F/2` Hz. Actual presentation depends on frame pacing and display refresh.
 
@@ -651,7 +653,7 @@ The wire retains its original smoothstep-like shape: full attenuation weight wit
 
 Do not enable damping wires as a universal Trinitron property; tube construction varies.
 
-## 9. Display color profiles
+## 9. Display Color Profiles
 
 The display profiles transform linear RGB channel drives into an approximate display phosphor gamut/white and express emitted values in the shader's linear BT.709 working/output coordinates. They are reference interpretations, not factory calibration files. The profile selector order is intentional: Sony Trinitron is the central hardware/design reference and the first two choices; Neutral — Standard is last as the display-transform bypass option. These profiles only provide color/white-point customization and the documented automatic mask pairing. They do not select a different complete CRT hardware model: all other shader subsystems remain part of the same Trinitron-oriented presentation.
 
@@ -776,7 +778,7 @@ At final composite, the blurred bloom is added to the linear CRT scene using `Bl
 
 The vignette is evaluated in CRT scene/faceplate texture space. A symmetric product of distances to four image boundaries is shaped with a square root and a `0.1` floor, then blended by `Vignette Strength`. `Vignette Mapping = Symmetric Viewport` (default) normalizes `SV_Position` against DuckStation's active viewport offset and size, then evaluates the same curve in that rectangle. It gives matching mathematical falloff at the four active-image edges and does not assume the image fills the entire output buffer. `Legacy Fit` remains available and uses the retained NewPixie-derived `screen_uv` coordinates, including their existing unequal horizontal/vertical edge mapping. This is an aesthetic edge falloff, not a measured CRT luminance distribution. The selector changes only vignette coordinates; it does not alter source sampling, geometry projection or scanline pitch.
 
-### 10.5 color fringing
+### 10.5 Color Fringing
 
 The scene stage samples R, G and B at slightly different horizontal/vertical UV offsets, scaled by `Color Fringing`. This approximates a small channel misregistration/color separation. It is not a complete convergence, beam landing or chromatic-aberration model. The per-source-line RGB beam path mirrors these channel offsets when reconstructing individual line samples.
 
@@ -1005,17 +1007,16 @@ This category appears immediately below Source Image Filtering in the UI.
 
 ### 14.6 Scanlines & Beam
 
-The category has **12 user-adjustable settings**. The legacy `scanlines_enabled` master gate remains hidden (`hidden = true`, default `true`) for compatibility. The beam-profile selectors and Core + Tail parameters are also hidden, not deleted: `scanline_profile` defaults to Gaussian Beam (`1`), `beam_spot_profile` to Gaussian (`0`), and `horizontal_spot_structure` to Single Lobe (`0`); Tail Energy and Tail Width remain `2.0%` and `2.0x`. The Sine, Super-Gaussian, Lorentzian and Core + Tail algorithms remain implemented and are detailed in §7.2. The UI legend describes only the active Gaussian / Single Lobe defaults. `Scanline Strength = 0` bypasses vertical beam modulation, so no visible enable switch is needed. Field-Phase Flicker overrides all 12 visible settings and forces the hidden gate/profile choices to enabled / Gaussian Beam / Gaussian / Single Lobe while active; see §7.7.
+The category has **12 user-adjustable settings**. There is no separate scanline-enable uniform: `Scanline Strength = 0` is the sole beam-modulation bypass. The beam-profile selectors and Core + Tail parameters are hidden, not deleted: `scanline_profile` defaults to Gaussian Beam (`1`), `beam_spot_profile` to Gaussian (`0`), and `horizontal_spot_structure` to Single Lobe (`0`); Tail Energy and Tail Width remain `2.0%` and `2.0x`. The Sine, Super-Gaussian, Lorentzian and Core + Tail algorithms remain implemented and are detailed in §7.2. The UI legend describes only the active Gaussian / Single Lobe defaults. Field-Phase Flicker overrides all 12 visible settings and forces the hidden profile choices to Gaussian Beam / Gaussian / Single Lobe while active; see §7.7.
 
 | Variable | Default | Range / items | Purpose |
 |---|---:|---|---|
-| `scanlines_enabled` | `true` (hidden) | Boolean | Compatibility/master gate retained from the previous UI; hidden from users. Field-Phase Flicker forces it on. |
 | `scanline_strength` | `1.7` | `0–2`, `0.05` | Overall strength of the Gaussian beam modulation; zero is the visible user-facing bypass. |
-| `vertical_beam_model` | Shared Beam (`0`) | Shared Beam / Per-source-line RGB | Shared luminance-driven model or independent source-line/channel reconstruction. |
+| `vertical_beam_model` | Shared Beam (`0`) | Shared Beam / Per-source-line RGB | Shared luminance-driven model or independent per-channel sampling at selected beam-line positions. |
 | `per_source_line_attenuation_stage` | Source-Domain (`0`) | Source-Domain / Post-Display | Selects early attenuation or late Shared Beam-aligned attenuation; Per-source-line RGB only. Field-Phase Flicker forces Post-Display. |
 | `scanline_sharpness` | `1.0` | `0.5–3`, `0.05` | Controls the base Gaussian vertical beam sigma; higher values narrow it. |
 | `scanline_beam` | `0.75` | `0–1`, `0.05` | Brightness-dependent vertical beam widening. |
-| `beam_current_response` | `0.50` | `0.5–2`, `0.05` | Exponent mapping luminance or per-channel source-line drive to width response. |
+| `beam_current_response` | `0.50` | `0.5–2`, `0.05` | Exponent mapping luminance or per-channel beam-line drive to width response. |
 | `beam_average_drive` | `0.15` | `0.1–1`, `0.01` | Average output drive for the normalized vertical beam profile selected by the hidden spot-profile uniform. |
 | `beam_horizontal_spot` | `0.15` | `0–1`, `0.05` | Horizontal Gaussian spot sigma in output pixels at 1080p; combines with horizontal source smoothing. |
 | `scanline_lines` | `340` | `0–625`, `1` | **Manual Scanline Density:** multiplies the normalized beam coordinate `tcy`; zero selects the output-resolution-dependent NewPixie stock pitch. Not Hz or display refresh. |
@@ -1064,7 +1065,7 @@ The category follows Noise & Grain in the UI. `flicker_amount` is included here 
 |---|---:|---|---|
 | `blur_x` | `0.5` | `0–5`, `0.25` | Horizontal source ghost and post-CRT halation blur radius. |
 | `blur_y` | `0.5` | `0–5`, `0.25` | Vertical source ghost and post-CRT halation blur radius. |
-| `ghost_strength` | `0.6` | `0–3`, `0.05` | color-separated source-blur contribution. |
+| `ghost_strength` | `0.6` | `0–3`, `0.05` | Color-separated source-blur contribution. |
 | `halation_strength` | `0.15` | `0–2`, `0.05` | Post-emission optical glow; near zero skips halation sampling. |
 | `halation_respects_scanlines` | `false` | Boolean | Off allows glow into gaps; on reapplies local scanline factor. |
 | `halation_threshold` | `0.8` | `0–0.99`, `0.01` | Completed CRT-scene linear luminance bright-pass threshold. |
@@ -1194,7 +1195,7 @@ The shader processes DuckStation's post-render image. It does not encode/decode 
 - Slot/Shadow mean-transmission compensation is approximate.
 - Damping wires are optional and not universal to every grille tube.
 
-### 15.7 color profiles are reference interpretations
+### 15.7 Color Profiles Are Reference Interpretations
 
 - Japanese P22 is an aggregate estimate and not a factory Sony calibration.
 - KX-14CP1 uses a separate manually calibrated model reference, not a full device characterisation.
@@ -1427,7 +1428,7 @@ Line numbers move. Use function names and this map; verify the current source be
 | `SampleAccumFrameLinear()` | Linear-light source sampling and horizontal-edge validity. |
 | `PS_GaussianBlurHorizontal/Vertical()` | Pre-CRT separable Gaussian source blur used for ghosting. |
 | `edge_mask()` | Scene-sample validity/edge feather. |
-| `beam_profile_value()`, `beam_profile_integral()` | Gaussian error-function, bounded Super-Gaussian quadrature and Lorentzian `atan` profile primitives. |
+| `beam_profile_integral()` | Gaussian error-function, bounded Super-Gaussian quadrature and Lorentzian `atan` profile integrals. |
 | `beam_profile_pixel_average()` | Periodic selected Gaussian-family beam integration over an output-pixel footprint. |
 | `beam_profile_source_line_*()` | Bounded Per-source-line RGB support, integration and area normalization for the selected spot profile. |
 | `source_native_pixel_size_px()` | Native raster cell dimensions in output pixels. |
