@@ -95,10 +95,10 @@ uniform int project_credits <
 
 uniform int display_profile <
     ui_type = "combo";
-    ui_items = "Sony Trinitron — Japanese Cool\0Sony Trinitron — Balanced Color\0Sony BVM-D24 — EBU Cool\0Sony KX-14CP1 — Monitor Reference\0Toshiba AF — Balanced Color\0Toshiba AF — Warm Cinema\0Standard — Reference Color\0";
+    ui_items = "Sony Trinitron — Japanese Cool\0Sony Trinitron — Balanced Color\0Sony BVM-D24 — EBU Cool\0Sony KX-14CP1 — Monitor Reference\0Toshiba AF — Balanced Color\0Toshiba AF — Warm Cinema\0Neutral — Standard\0";
     ui_label = "Display Color Profile";
     ui_category = "Display Setup";
-    ui_tooltip = "Choose the colour character. Sony P22 is the cooler Japanese-inspired reference; Toshiba uses SMPTE-C with balanced D65 and warm D55 interpretations; BVM-D24 EBU Cool uses the published EBU phosphor primaries with the existing Japanese Cool white character; Standard bypasses the display transform. These are reference interpretations, not individual-tube calibrations.";
+    ui_tooltip = "Choose the colour character. Sony P22 is the cooler Japanese-inspired reference; Toshiba uses SMPTE-C with balanced D65 and warm D55 interpretations; BVM-D24 EBU Cool uses the published EBU phosphor primaries with the existing Japanese Cool white character; Neutral bypasses only the display-colour transform; masks and all later shader processing still apply. These are reference interpretations, not individual-tube calibrations.";
 > = 0;
 
 uniform int phosphor_mask_selection <
@@ -112,18 +112,9 @@ uniform int phosphor_mask_selection <
 uniform int phosphor_mask_help
 <
     ui_label = " ";
-    ui_text = "Defaults: Sony Trinitron uses Aperture Grille; Toshiba AF uses Slot Mask. Choose another mask to edit its values in the matching Custom submenu below. Display profile colors remain unchanged.";
+    ui_text = "Defaults: Sony Trinitron and Neutral use Aperture Grille; Toshiba AF uses Slot Mask. Choose another mask to edit its values in the matching Custom submenu below. Display profile colors remain unchanged.";
     ui_category = "Display Setup";
 > = 0;
-
-uniform float edge_zoom <
-    ui_type = "drag";
-    ui_min = 1.0;
-    ui_max = 1.4;
-    ui_step = 0.001;
-    ui_label = "Edge Zoom";
-    ui_category = "Display Setup";
-> = 1.0;
 
 // IMAGE & COLOR -----------------------------------------------------------------
 
@@ -174,6 +165,16 @@ uniform float black_level <
     ui_tooltip = "Normalized input display-black reference used by the BT.1886-style EOTF. The filmic toe retains its saved 0.004 baseline and tracks changes to this control after the existing 1.25 input gain. 0.004 means 0.4% of reference white.";
 > = 0.004;
 
+
+uniform float edge_zoom <
+    ui_type = "drag";
+    ui_min = 1.0;
+    ui_max = 1.4;
+    ui_step = 0.001;
+    ui_label = "Edge Zoom";
+    ui_category = "Image & Color";
+    ui_tooltip = "Enlarges the displayed image within the active viewport, cropping the outer edges.";
+> = 1.0;
 
 // SOURCE IMAGE FILTERING ---------------------------------------------------------
 
@@ -331,16 +332,14 @@ uniform bool scanlines_enabled <
     ui_type = "boolean";
     ui_label = "Enable Scanlines";
     ui_category = "Scanlines & Beam";
-    ui_tooltip = "Disables all vertical scanline beam modulation when unchecked, regardless of beam profile, model, strength, frequency, rolling phase or field phase. Phosphor masks and their damper wires remain active.";
+    ui_tooltip = "Disables vertical scanline beam modulation when unchecked. Phosphor masks and their damping wires remain active.";
 > = true;
 
-uniform int scanline_profile <
-    ui_type = "combo";
-    ui_items = "Sine\0Gaussian Beam\0";
-    ui_label = "Scanline Beam Profile";
+uniform int fixed_beam_shape_help <
+    ui_label = " ";
+    ui_text = "Fixed beam shape: Gaussian Beam scanlines, Gaussian spot kernel and Single Lobe horizontal spot.";
     ui_category = "Scanlines & Beam";
-    ui_tooltip = "Gaussian models a localized beam spot with brightness-dependent widening; Sine preserves the previous waveform.";
-> = 1;
+> = 0;
 
 uniform float scanline_strength <
     ui_type = "drag";
@@ -349,7 +348,24 @@ uniform float scanline_strength <
     ui_step = 0.05;
     ui_label = "Scanline Strength";
     ui_category = "Scanlines & Beam";
+    ui_tooltip = "Controls the strength of the Gaussian beam modulation. 0 leaves the image vertically unmodulated.";
 > = 1.7;
+
+uniform int vertical_beam_model <
+    ui_type = "combo";
+    ui_items = "Shared Beam\0Per-source-line RGB\0";
+    ui_label = "Vertical Beam Model";
+    ui_category = "Scanlines & Beam";
+    ui_tooltip = "Shared Beam derives one vertical beam from source luminance. Per-source-line RGB samples nearby source-line centres independently and derives separate red, green and blue beam contributions.";
+> = 0;
+
+uniform int per_source_line_attenuation_stage <
+    ui_type = "combo";
+    ui_items = "Source-Domain\0Post-Display (Shared Beam-aligned)\0";
+    ui_label = "Per-source-line RGB Attenuation";
+    ui_category = "Scanlines & Beam";
+    ui_tooltip = "Only affects Per-source-line RGB. Source-Domain (default) applies RGB attenuation before ghosting and the display transforms. Post-Display applies its channel-specific factor after display colour, contrast, saturation and vignette, alongside Shared Beam. Field-Phase Flicker forces Post-Display while active.";
+> = 0;
 
 uniform float scanline_sharpness <
     ui_type = "drag";
@@ -358,7 +374,7 @@ uniform float scanline_sharpness <
     ui_step = 0.05;
     ui_label = "Vertical Beam Sharpness";
     ui_category = "Scanlines & Beam";
-    ui_tooltip = "Sine mode: waveform shaping. Gaussian-family modes: controls vertical beam sigma; higher values produce a narrower spot.";
+    ui_tooltip = "Controls the Gaussian vertical beam sigma; higher values produce a narrower spot.";
 > = 1.0;
 
 uniform float scanline_beam <
@@ -368,70 +384,8 @@ uniform float scanline_beam <
     ui_step = 0.05;
     ui_label = "Scanline Beam Widening";
     ui_category = "Scanlines & Beam";
-    ui_tooltip = "Controls brightness-dependent vertical beam widening. The selected spot is integrated over each output pixel's vertical footprint. Beam Current Response shapes the luminance-to-widening relationship.";
+    ui_tooltip = "Controls brightness-dependent vertical beam widening. Beam Current Response shapes the drive-to-widening relationship.";
 > = 0.75;
-
-uniform int beam_spot_profile <
-    ui_type = "combo";
-    ui_items = "Gaussian\0Super-Gaussian\0Lorentzian\0";
-    ui_label = "Beam Spot Profile";
-    ui_category = "Scanlines & Beam";
-    ui_tooltip = "Controls the horizontal spot kernel and vertical scanline beam. Gaussian is the default; Super-Gaussian has a flatter centre and sharper shoulders; Lorentzian has longer tails.";
-> = 0;
-
-uniform int horizontal_spot_structure <
-    ui_type = "combo";
-    ui_items = "Single Lobe\0Core + Tail\0";
-    ui_label = "Horizontal Spot Structure";
-    ui_category = "Scanlines & Beam";
-    ui_tooltip = "Single Lobe keeps the existing horizontal spot. Core + Tail redistributes the selected percentage of spot energy into a wider component; the selected Beam Spot Profile defines both components. The two tail controls below only affect Core + Tail.";
-> = 0;
-
-uniform float horizontal_spot_tail_energy <
-    ui_type = "drag";
-    ui_min = 0.0;
-    ui_max = 10.0;
-    ui_step = 0.25;
-    ui_label = "Horizontal Spot Tail Energy (%)";
-    ui_category = "Scanlines & Beam";
-    ui_tooltip = "Sets the percentage of horizontal spot energy redistributed from the core into the wider tail. Default 2%. Only affects Core + Tail; 0% is equivalent to Single Lobe.";
-> = 2.0;
-
-uniform float horizontal_spot_tail_width <
-    ui_type = "drag";
-    ui_min = 1.0;
-    ui_max = 4.0;
-    ui_step = 0.05;
-    ui_label = "Horizontal Spot Tail Width (x)";
-    ui_category = "Scanlines & Beam";
-    ui_tooltip = "Sets the tail sigma as a multiplier of the core sigma. Default 2x. Only affects Core + Tail; 1x makes the tail identical to the core.";
-> = 2.0;
-
-uniform int vertical_beam_model <
-    ui_type = "combo";
-    ui_items = "Shared Beam\0Per-source-line RGB\0";
-    ui_label = "Vertical Beam Model";
-    ui_category = "Scanlines & Beam";
-    ui_tooltip = "Shared Beam keeps the existing luminance-driven scanline modulation. Per-source-line RGB samples each selected beam-line centre independently and derives channel-specific current and beam widths. It respects native/manual/stock pitch, rolling scanlines and field phase. Sine always retains its existing waveform.";
-> = 0;
-
-uniform int per_source_line_attenuation_stage <
-    ui_type = "combo";
-    ui_items = "Source-Domain\0Post-Display (Shared Beam-aligned)\0";
-    ui_label = "Per-source-line RGB Attenuation";
-    ui_category = "Scanlines & Beam";
-    ui_tooltip = "Only affects Per-source-line RGB with Gaussian Beam selected. Source-Domain (default) retains the original early RGB beam attenuation. Post-Display reconstructs the source colour first, then applies its channel-specific beam factor after the display colour/contrast/vignette stages, alongside Shared Beam. The two modes change how ghosting and colour transforms interact with scanline depth.";
-> = 0;
-
-uniform float beam_horizontal_spot <
-    ui_type = "drag";
-    ui_min = 0.0;
-    ui_max = 1.0;
-    ui_step = 0.05;
-    ui_label = "Horizontal Beam Spot Width";
-    ui_category = "Scanlines & Beam";
-    ui_tooltip = "Horizontal beam-spot sigma in output pixels at 1080p. Scales with output height and combines with Horizontal Source-Pixel Smoothing in the internal-grid reconstruction kernel. 0 disables the beam-width contribution.";
-> = 0.15;
 
 uniform float beam_current_response <
     ui_type = "drag";
@@ -440,7 +394,7 @@ uniform float beam_current_response <
     ui_step = 0.05;
     ui_label = "Beam Current Response";
     ui_category = "Scanlines & Beam";
-    ui_tooltip = "Shared Beam uses source luminance; Per-source-line RGB uses each source line's corresponding channel drive. This shapes how drive widens the vertical beam. 1 is linear.";
+    ui_tooltip = "Shared Beam uses source luminance; Per-source-line RGB uses each line's corresponding channel drive. This exponent controls how drive widens the vertical beam; 1 is linear.";
 > = 0.50;
 
 uniform float beam_average_drive <
@@ -450,7 +404,17 @@ uniform float beam_average_drive <
     ui_step = 0.01;
     ui_label = "Beam Average Drive";
     ui_category = "Scanlines & Beam";
-    ui_tooltip = "Sets the mean linear output of the selected normalized vertical beam profile at full scanline strength in either beam model. Lower values darken the scanline average; higher values raise it.";
+    ui_tooltip = "Sets the mean linear output of the normalized vertical Gaussian beam at full scanline strength.";
+> = 0.15;
+
+uniform float beam_horizontal_spot <
+    ui_type = "drag";
+    ui_min = 0.0;
+    ui_max = 1.0;
+    ui_step = 0.05;
+    ui_label = "Horizontal Beam Spot Width";
+    ui_category = "Scanlines & Beam";
+    ui_tooltip = "Horizontal Gaussian spot sigma in output pixels at 1080p. Scales with output height and combines with Horizontal Source-Pixel Smoothing in the source reconstruction kernel.";
 > = 0.15;
 
 uniform float scanline_lines <
@@ -470,6 +434,23 @@ uniform bool native_scanline_pitch <
     ui_tooltip = "Derives scanline spacing from DuckStation's native frame dimensions. When enabled, it overrides Source-Line Frequency; when disabled, the stock or manual pitch is used.";
 > = false;
 
+uniform bool interlace <
+    ui_type = "boolean";
+    ui_label = "Alternating Field Phase";
+    ui_category = "Scanlines & Beam";
+    ui_tooltip = "Alternates Gaussian beam phase on odd/even rendered frames. This is a procedural phase shift, not true 480i field reconstruction.";
+> = true;
+
+uniform bool scanroll <
+    ui_type = "boolean";
+    ui_label = "Rolling Scanlines";
+    ui_category = "Scanlines & Beam";
+    ui_tooltip = "Continuously moves the Gaussian beam phase using elapsed time. Disable it to isolate Alternating Field Phase.";
+> = true;
+
+// 13 user-adjustable Scanlines & Beam settings. Beam profile, spot profile and horizontal
+// spot structure are fixed to Gaussian Beam / Gaussian / Single Lobe in this shader.
+
 // DuckStation supplies the active native raster dimensions and final viewport.
 // These are runtime source uniforms, not additional DuckStation UI controls.
 uniform float NativeWidth < source = "nativewidth"; >;
@@ -482,19 +463,6 @@ uniform float InternalHeight < source = "internalheight"; >;
 uniform float2 ViewportOffset < source = "viewportoffset"; >;
 uniform float2 ViewportSize < source = "viewportsize"; >;
 
-uniform bool interlace <
-    ui_type = "boolean";
-    ui_label = "Alternating Field Phase";
-    ui_category = "Scanlines & Beam";
-    ui_tooltip = "Alternates scanline phase on odd/even frames. For an obvious test, disable Rolling Scanlines. This is not true 480i field reconstruction.";
-> = true;
-
-uniform bool scanroll <
-    ui_type = "boolean";
-    ui_label = "Rolling Scanlines";
-    ui_category = "Scanlines & Beam";
-> = true;
-
 // CRT ARTIFACTS & PERSISTENCE ---------------------------------------------------
 
 uniform float vignette_strength <
@@ -504,7 +472,7 @@ uniform float vignette_strength <
     ui_step = 0.05;
     ui_label = "Vignette Strength";
     ui_category = "CRT Artifacts & Persistence";
-> = 0.8;
+> = 0.5;
 
 uniform int vignette_mapping <
     ui_type = "combo";
@@ -597,7 +565,7 @@ uniform bool headroom_aware_grain <
     ui_label = "Headroom-Aware Grain";
     ui_category = "Noise & Grain";
     ui_tooltip = "Scales each grain excursion symmetrically to the available distance from black and white before adding it. This prevents one-sided clipping at the SDR output limits and reduces grain near the extremes. Off preserves the existing grain response.";
-> = false;
+> = true;
 
 uniform float noise_chroma <
     ui_type = "drag";
@@ -931,27 +899,17 @@ uniform bool field_phase_flicker <
 
 uniform int field_phase_flicker_help <
     ui_label = " ";
-    ui_text = "Overrides every Scanlines & Beam setting while enabled. Uses that section's saved defaults, but forces Gaussian Beam with Per-source-line RGB, Post-Display (Shared Beam-aligned) attenuation, Rolling Scanlines off and Alternating Field Phase on. FCount parity switches the phase between 0 and π on successive rendered frames—a half-period shift that redistributes neighbouring source-line beam contributions. This creates a pronounced CRT-like flicker that can look like a very fast top-to-bottom flicker. The whole pattern changes phase globally; it is not a physical beam sweep or true 480i. Other image settings affect its appearance, not its timing. Experiment with it in motion and consider viewing comfort: it may cause eye strain or dizziness. Off by default.";
+    ui_text = "Enable for a very fast, pronounced CRT-like flicker. It may cause eye strain or dizziness; use at your discretion.";
     ui_category = "Experimental";
 > = 0;
 
-// The experimental mode deliberately pins every Scanlines & Beam parameter to its
-// current UI default, then applies its explicit beam/phase overrides. Alternating Field
-// Phase switches FCount parity between 0 and PI on successive rendered frames; in the
-// Per-source-line RGB model this is a half-period displacement of the Gaussian beam
-// pattern, redistributing neighbouring source-line contributions and producing the
-// rapid CRT-like flicker described in the UI. This is a global phase alternation, not a
-// physical top-to-bottom beam sweep or true 480i field reconstruction. The UI uniforms
-// remain untouched so users' selected values take effect again when the mode is off.
+// Field-Phase Flicker pins the 13 user-adjustable Scanlines & Beam controls to their
+// documented saved defaults, then applies its explicit model/phase overrides. The beam
+// profile, spot kernel and horizontal structure are fixed Gaussian / Gaussian / Single Lobe.
 #define PX_SCANLINES_ENABLED          (field_phase_flicker ? true  : scanlines_enabled)
-#define PX_SCANLINE_PROFILE            (field_phase_flicker ? 1     : scanline_profile)
 #define PX_SCANLINE_STRENGTH           (field_phase_flicker ? 1.7   : scanline_strength)
 #define PX_SCANLINE_SHARPNESS          (field_phase_flicker ? 1.0   : scanline_sharpness)
 #define PX_SCANLINE_BEAM               (field_phase_flicker ? 0.75  : scanline_beam)
-#define PX_BEAM_SPOT_PROFILE           (field_phase_flicker ? 0     : beam_spot_profile)
-#define PX_HORIZONTAL_SPOT_STRUCTURE   (field_phase_flicker ? 0     : horizontal_spot_structure)
-#define PX_HORIZONTAL_SPOT_TAIL_ENERGY (field_phase_flicker ? 2.0   : horizontal_spot_tail_energy)
-#define PX_HORIZONTAL_SPOT_TAIL_WIDTH  (field_phase_flicker ? 2.0   : horizontal_spot_tail_width)
 #define PX_VERTICAL_BEAM_MODEL         (field_phase_flicker ? 1     : vertical_beam_model)
 #define PX_PER_SOURCE_LINE_ATTENUATION_STAGE (field_phase_flicker ? 1 : per_source_line_attenuation_stage)
 #define PX_BEAM_HORIZONTAL_SPOT        (field_phase_flicker ? 0.15  : beam_horizontal_spot)
@@ -966,10 +924,16 @@ uniform int field_phase_flicker_help <
 
 uniform int debug_view <
     ui_type = "combo";
-    ui_items = "Off\0Accumulated frame (linear)\0Current input (encoded)\0Trail only (linear x4)\0Counter and toggle test\0Mask only\0CRT scene (before bloom)\0Bloom blur (x4)\0Bloom extract (x4)\0";
+    ui_items = "Off\0Accumulated Frame (Linear)\0Current Input (Encoded)\0Trail Only (Linear x4)\0Counter and Toggle Test\0Phosphor Mask Only\0CRT Scene (Display View, No Bloom)\0Bloom Blur (x4)\0Bloom Extract (x4)\0Horizontal Source Reconstruction\0Vertical Source Reconstruction\0Source Detail Confidence\0Source Ghost Blur (x4)\0Scanline / Beam Factor\0Halation Bright Pass (x4)\0Halation Horizontal Blur (x4)\0Halation Blur (x4)\0Vignette Falloff\0CRT Surface Coverage\0Phosphor Mask + Damping Wires\0CRT Scene (Linear, Pre-Glow)\0";
     ui_label = "Debug View";
     ui_category = "Diagnostics";
-    ui_tooltip = "Views 1-4 inspect input/history. Mask Only shows the selected phosphor pattern. CRT Scene shows the processed image before bloom. Bloom Extract and Bloom Blur show the new glow stages, amplified x4 for visibility.";
+    ui_tooltip = "Inspect source reconstruction, detail confidence, temporal history, ghosting, beam attenuation, phosphor masks, geometry, vignette, halation and bloom. Intermediate linear-light views are tone-mapped or amplified where needed for visibility. See README.md for the full view list.";
+> = 0;
+
+uniform int debug_view_help <
+    ui_label = " ";
+    ui_text = "Diagnostics are temporary inspection views; set Debug View to Off to restore the normal image.";
+    ui_category = "Diagnostics";
 > = 0;
 
 // BT.1886-style EOTF with configurable gamma and normalized black level, assuming normalized
@@ -1184,19 +1148,6 @@ float edge_mask(float2 suv)
     return inside * m.x * m.y;
 }
 
-float beam_profile_value(float normalized_distance, int profile)
-{
-    float x = abs(normalized_distance);
-    if (profile == 1)
-    {
-        float x2 = x * x;
-        return exp(-0.5 * x2 * x2); // Super-Gaussian: flatter centre, sharper shoulders.
-    }
-    if (profile == 2)
-        return 1.0 / (1.0 + x * x);      // Lorentzian: broader tails.
-    return exp(-0.5 * x * x);            // Gaussian.
-}
-
 float beam_erf_approx(float x)
 {
     float ax = abs(x);
@@ -1208,107 +1159,56 @@ float beam_erf_approx(float x)
     return (x < 0.0) ? (tau - 1.0) : (1.0 - tau);
 }
 
-float beam_super_gaussian_integral(float lo, float hi, float sigma)
-{
-    // 16-point Gauss-Legendre quadrature for exp(-0.5*(x/sigma)^4).
-    lo = max(lo, -4.0 * sigma);
-    hi = min(hi, 4.0 * sigma);
-    if (hi <= lo)
-        return 0.0;
-
-    float midpoint = 0.5 * (lo + hi);
-    float half_span = 0.5 * (hi - lo);
-    float a1 = half_span * 0.0950125098;
-    float a2 = half_span * 0.2816035508;
-    float a3 = half_span * 0.4580167777;
-    float a4 = half_span * 0.6178762444;
-    float a5 = half_span * 0.7554044084;
-    float a6 = half_span * 0.8656312024;
-    float a7 = half_span * 0.9445750231;
-    float a8 = half_span * 0.98940093499165;
-    float q1a = (midpoint - a1) / sigma, q1b = (midpoint + a1) / sigma;
-    float q2a = (midpoint - a2) / sigma, q2b = (midpoint + a2) / sigma;
-    float q3a = (midpoint - a3) / sigma, q3b = (midpoint + a3) / sigma;
-    float q4a = (midpoint - a4) / sigma, q4b = (midpoint + a4) / sigma;
-    float q5a = (midpoint - a5) / sigma, q5b = (midpoint + a5) / sigma;
-    float q6a = (midpoint - a6) / sigma, q6b = (midpoint + a6) / sigma;
-    float q7a = (midpoint - a7) / sigma, q7b = (midpoint + a7) / sigma;
-    float q8a = (midpoint - a8) / sigma, q8b = (midpoint + a8) / sigma;
-    float f1a = exp(-0.5 * q1a * q1a * q1a * q1a), f1b = exp(-0.5 * q1b * q1b * q1b * q1b);
-    float f2a = exp(-0.5 * q2a * q2a * q2a * q2a), f2b = exp(-0.5 * q2b * q2b * q2b * q2b);
-    float f3a = exp(-0.5 * q3a * q3a * q3a * q3a), f3b = exp(-0.5 * q3b * q3b * q3b * q3b);
-    float f4a = exp(-0.5 * q4a * q4a * q4a * q4a), f4b = exp(-0.5 * q4b * q4b * q4b * q4b);
-    float f5a = exp(-0.5 * q5a * q5a * q5a * q5a), f5b = exp(-0.5 * q5b * q5b * q5b * q5b);
-    float f6a = exp(-0.5 * q6a * q6a * q6a * q6a), f6b = exp(-0.5 * q6b * q6b * q6b * q6b);
-    float f7a = exp(-0.5 * q7a * q7a * q7a * q7a), f7b = exp(-0.5 * q7b * q7b * q7b * q7b);
-    float f8a = exp(-0.5 * q8a * q8a * q8a * q8a), f8b = exp(-0.5 * q8b * q8b * q8b * q8b);
-    return half_span * (
-        0.1894506105 * (f1a + f1b) + 0.1826034150 * (f2a + f2b)
-      + 0.1691565194 * (f3a + f3b) + 0.1495959888 * (f4a + f4b)
-      + 0.1246289713 * (f5a + f5b) + 0.0951585117 * (f6a + f6b)
-      + 0.0622535239 * (f7a + f7b) + 0.0271524594 * (f8a + f8b));
-}
-
-float beam_profile_integral(float lo, float hi, float sigma, int profile)
+float gaussian_beam_integral(float lo, float hi, float sigma)
 {
     sigma = max(sigma, 1e-5);
-    if (profile == 0)
-    {
-        float scale = sigma * 1.2533141373155;
-        return scale * (beam_erf_approx(hi / (1.41421356237 * sigma))
-                      - beam_erf_approx(lo / (1.41421356237 * sigma)));
-    }
-    if (profile == 2)
-        return sigma * (atan(hi / sigma) - atan(lo / sigma));
-    return beam_super_gaussian_integral(lo, hi, sigma);
+    float scale = sigma * 1.2533141373155;
+    return scale * (beam_erf_approx(hi / (1.41421356237 * sigma))
+                  - beam_erf_approx(lo / (1.41421356237 * sigma)));
 }
-float beam_profile_pixel_average(float signed_distance, float pixel_height,
-                                 float sigma, int profile)
+
+float gaussian_beam_pixel_average(float signed_distance, float pixel_height, float sigma)
 {
     pixel_height = max(pixel_height, 1e-5);
     float lo = signed_distance - 0.5 * pixel_height;
     float hi = signed_distance + 0.5 * pixel_height;
     float integral = 0.0;
 
-    // The beam profile repeats every source-line period. Split any footprint
-    // crossing a +/-0.5 boundary and wrap each segment into the central period.
+    // The Gaussian beam repeats every source-line period. Split any footprint crossing
+    // a period boundary and wrap each segment into the central interval.
     [unroll]
     for (int period = -3; period <= 3; ++period)
     {
         float segment_lo = max(lo, (float)period - 0.5);
         float segment_hi = min(hi, (float)period + 0.5);
         if (segment_hi > segment_lo)
-            integral += beam_profile_integral(segment_lo - period,
-                                              segment_hi - period,
-                                              sigma, profile);
+            integral += gaussian_beam_integral(segment_lo - period,
+                                              segment_hi - period, sigma);
     }
     return integral / pixel_height;
 }
 
-float beam_profile_source_line_radius(float sigma, int profile)
+float gaussian_beam_source_line_radius(float sigma)
 {
-    // Bound the source-line tails while retaining Lorentzian overlap between
-    // neighboring lines. Gaussian-family tails are negligible beyond 4 sigma;
-    // Lorentzian uses a wider fixed +/-5.5-line support like the horizontal kernel.
-    return (profile == 2) ? 5.5 : (4.0 * max(sigma, 1e-5));
+    return 4.0 * max(sigma, 1e-5);
 }
 
-float beam_profile_source_line_pixel_average(float signed_distance, float pixel_height,
-                                             float sigma, int profile)
+float gaussian_beam_source_line_pixel_average(float signed_distance, float pixel_height,
+                                              float sigma)
 {
     pixel_height = max(pixel_height, 1e-5);
-    float radius = beam_profile_source_line_radius(sigma, profile);
+    float radius = gaussian_beam_source_line_radius(sigma);
     float lo = max(signed_distance - 0.5 * pixel_height, -radius);
     float hi = min(signed_distance + 0.5 * pixel_height, radius);
     if (hi <= lo)
         return 0.0;
-    return beam_profile_integral(lo, hi, sigma, profile) / pixel_height;
+    return gaussian_beam_integral(lo, hi, sigma) / pixel_height;
 }
 
-float beam_profile_source_line_area(float sigma, int profile)
+float gaussian_beam_source_line_area(float sigma)
 {
-    float radius = beam_profile_source_line_radius(sigma, profile);
-    return beam_profile_integral(-radius, radius, sigma, profile);
+    float radius = gaussian_beam_source_line_radius(sigma);
+    return gaussian_beam_integral(-radius, radius, sigma);
 }
 
 // Axis-specific hard validity prevents CLAMP from repeating border texels into the image.
@@ -1636,119 +1536,15 @@ float source_normal_cdf(float x)
     return 0.5 * (1.0 + source_erf_approx(x * 0.7071067811865475));
 }
 
-float source_super_gaussian_integral(float lo, float hi, float sigma)
-{
-    // 16-point Gauss-Legendre quadrature for exp(-0.5*(x/sigma)^4).
-    // Integrating only the clipped interval keeps the evaluation bounded.
-    float midpoint = 0.5 * (lo + hi);
-    float half_span = 0.5 * (hi - lo);
-    float x0 = midpoint;
-    float a1 = half_span * 0.0950125098;
-    float a2 = half_span * 0.2816035508;
-    float a3 = half_span * 0.4580167777;
-    float a4 = half_span * 0.6178762444;
-    float a5 = half_span * 0.7554044084;
-    float a6 = half_span * 0.8656312024;
-    float a7 = half_span * 0.9445750231;
-    float a8 = half_span * 0.98940093499165;
-
-    float q1a = (x0 - a1) / sigma, q1b = (x0 + a1) / sigma;
-    float q2a = (x0 - a2) / sigma, q2b = (x0 + a2) / sigma;
-    float q3a = (x0 - a3) / sigma, q3b = (x0 + a3) / sigma;
-    float q4a = (x0 - a4) / sigma, q4b = (x0 + a4) / sigma;
-    float q5a = (x0 - a5) / sigma, q5b = (x0 + a5) / sigma;
-    float q6a = (x0 - a6) / sigma, q6b = (x0 + a6) / sigma;
-    float q7a = (x0 - a7) / sigma, q7b = (x0 + a7) / sigma;
-    float q8a = (x0 - a8) / sigma, q8b = (x0 + a8) / sigma;
-    float f1a = exp(-0.5 * q1a * q1a * q1a * q1a);
-    float f1b = exp(-0.5 * q1b * q1b * q1b * q1b);
-    float f2a = exp(-0.5 * q2a * q2a * q2a * q2a);
-    float f2b = exp(-0.5 * q2b * q2b * q2b * q2b);
-    float f3a = exp(-0.5 * q3a * q3a * q3a * q3a);
-    float f3b = exp(-0.5 * q3b * q3b * q3b * q3b);
-    float f4a = exp(-0.5 * q4a * q4a * q4a * q4a);
-    float f4b = exp(-0.5 * q4b * q4b * q4b * q4b);
-    float f5a = exp(-0.5 * q5a * q5a * q5a * q5a);
-    float f5b = exp(-0.5 * q5b * q5b * q5b * q5b);
-    float f6a = exp(-0.5 * q6a * q6a * q6a * q6a);
-    float f6b = exp(-0.5 * q6b * q6b * q6b * q6b);
-    float f7a = exp(-0.5 * q7a * q7a * q7a * q7a);
-    float f7b = exp(-0.5 * q7b * q7b * q7b * q7b);
-    float f8a = exp(-0.5 * q8a * q8a * q8a * q8a);
-    float f8b = exp(-0.5 * q8b * q8b * q8b * q8b);
-
-    return half_span * (
-        0.1894506105 * (f1a + f1b)
-      + 0.1826034150 * (f2a + f2b)
-      + 0.1691565194 * (f3a + f3b)
-      + 0.1495959888 * (f4a + f4b)
-      + 0.1246289713 * (f5a + f5b)
-      + 0.0951585117 * (f6a + f6b)
-      + 0.0622535239 * (f7a + f7b)
-      + 0.0271524594 * (f8a + f8b));
-}
-float source_profile_cell_weight(float sample_coordinate, float cell_index,
-                                 float sigma, int profile, float native_to_sample_scale)
-{
-    sigma = max(sigma, 1e-5);
-    float distance = sample_coordinate - cell_index;
-    float lo = distance - 0.5;
-    float hi = distance + 0.5;
-    if (profile == 2)
-    {
-        // Finite-support, unit-area Lorentzian. The +/-5.5-native-cell support
-        // bounds the long tail while normalizing each source-cell kernel itself.
-        float radius = 5.5 * max(native_to_sample_scale, 1.0);
-        lo = max(lo, -radius);
-        hi = min(hi, radius);
-        if (hi <= lo)
-            return 0.0;
-        return (atan(hi / sigma) - atan(lo / sigma))
-            / max(2.0 * atan(radius / sigma), 1e-6);
-    }
-    if (profile == 1)
-    {
-        // Exclude negligible tails so the fixed quadrature resolves narrow spots.
-        lo = max(lo, -4.0 * sigma);
-        hi = min(hi, 4.0 * sigma);
-        if (hi <= lo)
-            return 0.0;
-        float area = source_super_gaussian_integral(lo, hi, sigma);
-        return area / max(2.1556 * sigma, 1e-6);
-    }
-    return source_normal_cdf(hi / sigma) - source_normal_cdf(lo / sigma);
-}
-
-float3 source_profile_cell_weight3(float sample_coordinate, float cell_index,
-                                   float3 sigma, int profile, float native_to_sample_scale)
+float3 source_profile_cell_weight3(float sample_coordinate, float cell_index, float3 sigma)
 {
     return float3(
-        source_profile_cell_weight(sample_coordinate, cell_index, sigma.r, profile, native_to_sample_scale),
-        source_profile_cell_weight(sample_coordinate, cell_index, sigma.g, profile, native_to_sample_scale),
-        source_profile_cell_weight(sample_coordinate, cell_index, sigma.b, profile, native_to_sample_scale));
-}
-
-float3 source_profile_cell_weight3_structured(float sample_coordinate, float cell_index,
-                                              float3 sigma, int profile,
-                                              float native_to_sample_scale)
-{
-    float3 core = source_profile_cell_weight3(
-        sample_coordinate, cell_index, sigma, profile, native_to_sample_scale);
-    if (PX_HORIZONTAL_SPOT_STRUCTURE == 0)
-        return core;
-
-    // Both components are individually unit-area normalized by the existing
-    // profile integrator. This preserves total energy while redistributing the
-    // user-selected fraction into a wider spot. The controls have no effect in
-    // Single Lobe mode because this function returns above.
-    float tail_energy = saturate(PX_HORIZONTAL_SPOT_TAIL_ENERGY * 0.01);
-    float tail_scale = max(PX_HORIZONTAL_SPOT_TAIL_WIDTH, 1.0);
-    if (tail_energy <= 0.0 || tail_scale <= 1.0001)
-        return core;
-
-    float3 tail = source_profile_cell_weight3(
-        sample_coordinate, cell_index, sigma * tail_scale, profile, native_to_sample_scale);
-    return lerp(core, tail, tail_energy);
+        source_normal_cdf((sample_coordinate - cell_index + 0.5) / max(sigma.r, 1e-5))
+            - source_normal_cdf((sample_coordinate - cell_index - 0.5) / max(sigma.r, 1e-5)),
+        source_normal_cdf((sample_coordinate - cell_index + 0.5) / max(sigma.g, 1e-5))
+            - source_normal_cdf((sample_coordinate - cell_index - 0.5) / max(sigma.g, 1e-5)),
+        source_normal_cdf((sample_coordinate - cell_index + 0.5) / max(sigma.b, 1e-5))
+            - source_normal_cdf((sample_coordinate - cell_index - 0.5) / max(sigma.b, 1e-5)));
 }
 
 float gaussian_source_cell_weight(float sample_coordinate, float cell_index, float sigma)
@@ -1896,29 +1692,11 @@ float4 PS_SmoothH(float4 pos : SV_Position, float2 uv : TEXCOORD0) : SV_Target
     }
 
     float maximum_sigma = base_sigma * (1.0 + HORIZONTAL_CURRENT_EXPANSION);
-    float tail_energy = saturate(PX_HORIZONTAL_SPOT_TAIL_ENERGY * 0.01);
-    float tail_width = max(PX_HORIZONTAL_SPOT_TAIL_WIDTH, 1.0);
-    float support_scale = (PX_HORIZONTAL_SPOT_STRUCTURE == 1 && tail_energy > 0.0)
-        ? tail_width : 1.0;
-    int support;
-    if (PX_BEAM_SPOT_PROFILE == 2)
-    {
-        // Preserve the Lorentzian's +/-5.5-native-cell support on the finer grid.
-        support = (int)ceil(5.5 * reconstruction_scale.x + 0.5);
-    }
-    else
-    {
-        // Keep the original five/six native-cell safety bound, scaled into internal cells.
-        // Core + Tail needs a wider tap allowance, scaled by the selected tail
-        // width. Keep the existing single-lobe support bound unchanged.
-        float support_native_cells = (PX_HORIZONTAL_SPOT_STRUCTURE == 1 && tail_energy > 0.0)
-            ? max(6.0, 3.5 * tail_width * maximum_sigma / max(reconstruction_scale.x, 1e-5))
-            : 5.0;
-        int support_limit = (int)ceil(support_native_cells * reconstruction_scale.x);
-        support = clamp((int)ceil(3.5 * maximum_sigma * support_scale
+    // Fixed Gaussian Single Lobe uses the original five-native-cell safety bound.
+    int support_limit = (int)ceil(5.0 * reconstruction_scale.x);
+    int support = clamp((int)ceil(3.5 * maximum_sigma
                                    + subpixel_offset_source_x + 0.5),
                         1, max(support_limit, 1));
-    }
     float3 reconstructed = float3(0.0, 0.0, 0.0);
 
     [loop]
@@ -1955,21 +1733,18 @@ float4 PS_SmoothH(float4 pos : SV_Position, float2 uv : TEXCOORD0) : SV_Target
             // output-pixel-relative positions. This is the legacy blend expressed
             // on the internal/native source-cell grid, so enhanced rendering keeps
             // its finer sampling lattice without changing the requested output-pixel offset.
-            float3 weight_left = source_profile_cell_weight3_structured(
+            float3 weight_left = source_profile_cell_weight3(
                 source_coordinate.x - subpixel_offset_source_x,
-                (float)source_cell_index, sigma, PX_BEAM_SPOT_PROFILE,
-                reconstruction_scale.x);
-            float3 weight_right = source_profile_cell_weight3_structured(
+                (float)source_cell_index, sigma);
+            float3 weight_right = source_profile_cell_weight3(
                 source_coordinate.x + subpixel_offset_source_x,
-                (float)source_cell_index, sigma, PX_BEAM_SPOT_PROFILE,
-                reconstruction_scale.x);
+                (float)source_cell_index, sigma);
             weight = 0.5 * (weight_left + weight_right);
         }
         else
         {
-            weight = source_profile_cell_weight3_structured(
-                source_coordinate.x, (float)source_cell_index, sigma, PX_BEAM_SPOT_PROFILE,
-                reconstruction_scale.x);
+            weight = source_profile_cell_weight3(
+                source_coordinate.x, (float)source_cell_index, sigma);
         }
         reconstructed += source_colour * weight;
     }
@@ -2096,7 +1871,7 @@ float3 tsample_blurred(sampler samp, float2 tc)
 
 // Resolve the single Phosphor Mask Type selector.
 // Selector 0 follows the display profile: all Sony profiles -> aperture grille; Toshiba takes
-// -> slot mask; Neutral BT.709 -> aperture grille (the previous neutral-profile default).
+// -> slot mask; Neutral -> aperture grille.
 // Explicit selector values 1-4 map to mask types 0-3 and affect only mask rendering.
 int active_phosphor_mask_type()
 {
@@ -2429,6 +2204,25 @@ float damper_wire_pixel_average(float pixel_center_y, float wire_center_y)
                   - damper_wire_signed_primitive(lo - wire_center_y));
 }
 
+float aperture_damper_transmission(float2 output_pixel_position)
+{
+    bool using_profile_mask_defaults = (phosphor_mask_selection == 0);
+    bool wires_enabled = using_profile_mask_defaults
+        ? PROFILE_APERTURE_DAMPERS : aperture_custom_damper_wires;
+    float wire_strength = using_profile_mask_defaults
+        ? PROFILE_APERTURE_WIRE_STRENGTH : aperture_custom_wire_strength;
+    if (!wires_enabled || active_phosphor_mask_type() != 0)
+        return 1.0;
+
+    float2 viewport_offset = source_viewport_offset_px();
+    float2 viewport_size = source_viewport_size_px();
+    float wire_a_y = viewport_offset.y + viewport_size.y / 3.0;
+    float wire_b_y = viewport_offset.y + 2.0 * viewport_size.y / 3.0;
+    float wire_a = damper_wire_pixel_average(output_pixel_position.y, wire_a_y);
+    float wire_b = damper_wire_pixel_average(output_pixel_position.y, wire_b_y);
+    return 1.0 - wire_strength * max(wire_a, wire_b);
+}
+
 // Convert linear RGB channel drives through the selected display's approximate phosphor gamut,
 // then express emitted light in the output monitor's linear BT.709 primaries. The Japanese P22
 // profiles use the aggregate NTSC-J reference; KX-14CP1 uses the separate manually calibrated
@@ -2596,6 +2390,20 @@ float2 screen_fit_uv(float2 uv)
     return (p + 0.5) * 0.92 + 0.04;
 }
 
+float vignette_multiplier(float2 legacy_screen_uv, float2 output_pixel_position)
+{
+    float2 vignette_uv = legacy_screen_uv;
+    if (vignette_mapping == 1)
+    {
+        float2 viewport_offset = source_viewport_offset_px();
+        float2 viewport_size = max(source_viewport_size_px(), float2(1.0, 1.0));
+        vignette_uv = saturate((output_pixel_position - viewport_offset) / viewport_size);
+    }
+    float shape = 0.1 + 16.0 * vignette_uv.x * vignette_uv.y
+        * (1.0 - vignette_uv.x) * (1.0 - vignette_uv.y);
+    return 1.3 * sqrt(max(shape, 0.1));
+}
+
 // Integer avalanche hash for repeatable per-cell grain values.
 // Unsigned overflow is intentional: the arithmetic wraps modulo 2^32.
 uint hash_noise_u32(uint value)
@@ -2751,6 +2559,9 @@ float4 PS_RenderCRTScene(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
 {
     float2 screen_size = ReShade::ScreenSize.xy;
 
+    if (debug_view == 12)
+        return float4(saturate(tex2D(GaussianBlurSampler, uv_tx).rgb * 4.0), 1.0);
+
     if (debug_view > 0 && debug_view <= 4)
     {
         float3 acc_now = tex2D(sAccumFrame, uv_tx).rgb;
@@ -2777,6 +2588,12 @@ float4 PS_RenderCRTScene(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
 
     if (debug_view == 5)
         return float4(build_phosphor_mask(uv_tx, screen_size), 1.0);
+    if (debug_view == 19)
+    {
+        float3 debug_mask = build_phosphor_mask(uv_tx, screen_size);
+        debug_mask *= aperture_damper_transmission(pos.xy);
+        return float4(debug_mask, 1.0);
+    }
 
     float frame_clock = animation_frame_clock();
     float time = mod(frame_clock, 849.0) * 36.0;
@@ -2811,13 +2628,13 @@ float4 PS_RenderCRTScene(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
     // Algebraically identical to the legacy two-step shaping below, reusing beam_luma.
     float i = 0.15 + 0.85 * beam_luma * beam_luma;
 
-    // The optional per-source-line model reconstructs native source lines here,
+    // The Per-source-line RGB model reconstructs native source lines here,
     // while the signal is still in the linear source domain of sSmoothV. Its RGB
     // beam attenuation can either remain here (Source-Domain) or be deferred to
     // the late display stage (Post-Display). Shared Beam remains unchanged.
     float per_source_beam_scanline_factor = 1.0;
     float3 per_source_beam_scanline_rgb_factor = float3(1.0, 1.0, 1.0);
-    if (PX_SCANLINES_ENABLED && PX_SCANLINE_PROFILE != 0 && PX_VERTICAL_BEAM_MODEL == 1
+    if (PX_SCANLINES_ENABLED && PX_VERTICAL_BEAM_MODEL == 1
         && PX_SCANLINE_STRENGTH > 0.0001)
     {
         float beam_tcy = scuv.y * 0.92 + 0.04;
@@ -2853,8 +2670,7 @@ float4 PS_RenderCRTScene(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
         float beam_sharpness_t = saturate((PX_SCANLINE_SHARPNESS - 0.5) / 2.5);
         float beam_base_sigma = max(lerp(0.14, 0.055, beam_sharpness_t), 0.02);
         float beam_max_sigma = beam_base_sigma * (1.0 + 0.65 * PX_SCANLINE_BEAM);
-        float beam_support_radius = beam_profile_source_line_radius(
-            beam_max_sigma, PX_BEAM_SPOT_PROFILE);
+        float beam_support_radius = gaussian_beam_source_line_radius(beam_max_sigma);
         int beam_line_support = clamp(
             (int)ceil(beam_support_radius + 0.5 * beam_pixel_height + 0.5), 1, 8);
         float3 beam_colour_sum = float3(0.0, 0.0, 0.0);
@@ -2935,15 +2751,15 @@ float4 PS_RenderCRTScene(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
                     float sigma_b = max(beam_base_sigma
                         * (1.0 + 0.65 * PX_SCANLINE_BEAM * current_b), 0.02);
 
-                    float raw_r = beam_profile_source_line_pixel_average(
-                        signed_distance, beam_pixel_height, sigma_r, PX_BEAM_SPOT_PROFILE);
-                    float raw_g = beam_profile_source_line_pixel_average(
-                        signed_distance, beam_pixel_height, sigma_g, PX_BEAM_SPOT_PROFILE);
-                    float raw_b = beam_profile_source_line_pixel_average(
-                        signed_distance, beam_pixel_height, sigma_b, PX_BEAM_SPOT_PROFILE);
-                    float mean_r = beam_profile_source_line_area(sigma_r, PX_BEAM_SPOT_PROFILE);
-                    float mean_g = beam_profile_source_line_area(sigma_g, PX_BEAM_SPOT_PROFILE);
-                    float mean_b = beam_profile_source_line_area(sigma_b, PX_BEAM_SPOT_PROFILE);
+                    float raw_r = gaussian_beam_source_line_pixel_average(
+                        signed_distance, beam_pixel_height, sigma_r);
+                    float raw_g = gaussian_beam_source_line_pixel_average(
+                        signed_distance, beam_pixel_height, sigma_g);
+                    float raw_b = gaussian_beam_source_line_pixel_average(
+                        signed_distance, beam_pixel_height, sigma_b);
+                    float mean_r = gaussian_beam_source_line_area(sigma_r);
+                    float mean_g = gaussian_beam_source_line_area(sigma_g);
+                    float mean_b = gaussian_beam_source_line_area(sigma_b);
                     float weight_r = raw_r / max(mean_r, 0.001) * line_mask_r;
                     float weight_g = raw_g / max(mean_g, 0.001) * line_mask_g;
                     float weight_b = raw_b / max(mean_b, 0.001) * line_mask_b;
@@ -3027,25 +2843,8 @@ float4 PS_RenderCRTScene(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
     // Subpixel coverage filtering supports non-integer pitches and scales pitch with output height.
     col *= build_phosphor_mask(uv_tx, screen_size);
 
-    // Damping wires are part of the aperture-grille structure and therefore attenuate all P22
-    // drives before the display-primary transform. They remain optional and are not universal.
-    bool using_profile_mask_defaults = (phosphor_mask_selection == 0);
-    bool grille_wires_enabled = using_profile_mask_defaults
-        ? PROFILE_APERTURE_DAMPERS : aperture_custom_damper_wires;
-    float grille_wire_level = using_profile_mask_defaults
-        ? PROFILE_APERTURE_WIRE_STRENGTH : aperture_custom_wire_strength;
-    if (grille_wires_enabled && active_phosphor_mask_type() == 0)
-    {
-        float2 viewport_offset = source_viewport_offset_px();
-        float2 viewport_size = source_viewport_size_px();
-        float pixel_y = uv_tx.y * screen_size.y;
-        float wire_a_y = viewport_offset.y + viewport_size.y / 3.0;
-        float wire_b_y = viewport_offset.y + 2.0 * viewport_size.y / 3.0;
-        float wire_a = damper_wire_pixel_average(pixel_y, wire_a_y);
-        float wire_b = damper_wire_pixel_average(pixel_y, wire_b_y);
-        float wire = max(wire_a, wire_b);
-        col *= 1.0 - grille_wire_level * wire;
-    }
+    // Optional damping-wire transmission is part of the aperture-grille structure.
+    col *= aperture_damper_transmission(pos.xy);
 
     col = apply_display_color_profile(col);
 
@@ -3070,24 +2869,12 @@ float4 PS_RenderCRTScene(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
     float lum_sat = max(dot(col, float3(0.2126, 0.7152, 0.0722)), 0.0);
     col = lerp(neutral_white * lum_sat, col, saturation);
 
-    // Legacy Fit preserves the retained NewPixie-derived framing. Symmetric Viewport
-    // evaluates the same vignette curve against the actual active image rectangle.
-    float2 vignette_uv = screen_uv;
-    if (vignette_mapping == 1)
-    {
-        float2 vignette_viewport_offset = source_viewport_offset_px();
-        float2 vignette_viewport_size = max(source_viewport_size_px(), float2(1.0, 1.0));
-        vignette_uv = saturate((pos.xy - vignette_viewport_offset) / vignette_viewport_size);
-    }
-
-    // Preserve the intended 0.1 vignette floor at the selected coordinate boundaries.
-    float vig = 0.1 + 16.0 * vignette_uv.x * vignette_uv.y
-        * (1.0 - vignette_uv.x) * (1.0 - vignette_uv.y);
-    vig = 1.3 * sqrt(max(vig, 0.1));
+    // Legacy Fit preserves the previous screen-fit framing; Symmetric Viewport uses
+    // normalized coordinates of the actual active DuckStation image rectangle.
+    float vig = vignette_multiplier(screen_uv, pos.xy);
     col *= lerp(1.0, vig, vignette_strength);
 
-    float lum = clamp(dot(col, float3(0.2126, 0.7152, 0.0722)), 0.0, 1.0);
-    float tcy = scuv.y * 0.92 + 0.04;
+        float tcy = scuv.y * 0.92 + 0.04;
     float stock_phase = screen_uv.y * screen_size.y * 1.5;
     bool use_native_pitch = PX_NATIVE_SCANLINE_PITCH && NativeWidth > 0.0 && NativeHeight > 0.0;
     bool use_manual_pitch = !use_native_pitch && PX_SCANLINE_LINES > 0.5;
@@ -3104,24 +2891,10 @@ float4 PS_RenderCRTScene(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
 
     if (PX_SCANLINES_ENABLED)
     {
-        if (PX_SCANLINE_PROFILE == 0)
+        if (PX_VERTICAL_BEAM_MODEL == 1)
         {
-            // Sine waveform retained for comparison and backwards compatibility.
-            float amp = 0.18 * PX_SCANLINE_STRENGTH * (1.0 - PX_SCANLINE_BEAM * lum);
-            float sl = sin(rolling_phase - line_phase - field_phase);
-            float shaped = sign(sl) * pow(abs(sl), PX_SCANLINE_SHARPNESS);
-            float scanline_floor = lerp(1.0, 0.35, saturate(PX_SCANLINE_STRENGTH));
-            // Strength 0 is neutral; strength 1 reproduces the original waveform, and values
-            // above 1 retain its overdrive response while the baseline remains at 0.35.
-            scans = clamp(scanline_floor + amp * shaped, 0.0, 1.0);
-            s = pow(saturate(scans), 0.9);
-            col *= s;
-        }
-        else if (PX_VERTICAL_BEAM_MODEL == 1)
-        {
-            // The source-line RGB reconstruction is prepared before the CRT colour
-            // pipeline. Post-Display mode defers only its channel-specific beam factor
-            // to this stage; Source-Domain already includes that factor in col.
+            // Per-source-line RGB reconstructs each native source line independently.
+            // Post-Display mode defers only its channel-specific beam factor to this stage.
             // The scalar is retained in alpha for Halation Respects Scanlines.
             s = per_source_beam_scanline_factor;
             if (PX_PER_SOURCE_LINE_ATTENUATION_STAGE == 1)
@@ -3129,18 +2902,13 @@ float4 PS_RenderCRTScene(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
         }
         else
         {
-            // Existing shared-current beam: retained unchanged as the default model.
-            // The selected beam spot is repeated once per source line. Bright image areas widen the
-            // vertical spot according to the retained beam-current response.
+            // Shared Beam: fixed Gaussian profile integrated over the output-pixel footprint.
             float line_cycles = (use_native_pitch || use_manual_pitch)
                 ? selected_line_cycles
                 : (stock_phase / 6.28318530718);
-            // Manual/native modes include the +PI/2 phase offset; stock mode retains its old phase.
             float phase_origin = (use_native_pitch || use_manual_pitch) ? 0.5 : 0.75;
             float beam_center = frac(phase_origin + (rolling_phase - field_phase) / 6.28318530718);
             float line_pos = frac(line_cycles);
-            float line_distance = abs(line_pos - beam_center);
-            line_distance = min(line_distance, 1.0 - line_distance);
 
             float sharpness_t = saturate((PX_SCANLINE_SHARPNESS - 0.5) / 2.5);
             float sigma = lerp(0.14, 0.055, sharpness_t);
@@ -3148,20 +2916,12 @@ float4 PS_RenderCRTScene(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
             sigma *= 1.0 + 0.65 * PX_SCANLINE_BEAM * current;
             sigma = max(sigma, 0.02);
 
-            // Integrate the selected periodic spot over the complete output-pixel
-            // footprint. Gaussian and Lorentzian use their analytic primitives;
-            // Super-Gaussian uses bounded 16-point Gauss-Legendre quadrature.
-            // The derivative accounts for the active viewport, image-fit transform,
-            // edge zoom and selected native/manual/stock pitch in one step.
             float line_pixel_height = max(abs(ddy(line_cycles)), 0.00001);
             float signed_distance = line_pos - beam_center;
             signed_distance -= floor(signed_distance + 0.5);
-            float beam_raw = beam_profile_pixel_average(
-                signed_distance, line_pixel_height, sigma, PX_BEAM_SPOT_PROFILE);
-            // Normalize against the selected profile's exact integral over one
-            // raster period. This retains unit mean even for wider Gaussian spots,
-            // where the infinite-domain approximation omits measurable period tails.
-            float beam_mean = beam_profile_integral(-0.5, 0.5, sigma, PX_BEAM_SPOT_PROFILE);
+            float beam_raw = gaussian_beam_pixel_average(
+                signed_distance, line_pixel_height, sigma);
+            float beam_mean = gaussian_beam_integral(-0.5, 0.5, sigma);
             float normalized_beam = beam_raw / max(beam_mean, 0.001);
             float beam_drive = normalized_beam * PX_BEAM_AVERAGE_DRIVE;
             scans = lerp(1.0, beam_drive, saturate(PX_SCANLINE_STRENGTH / 2.0));
@@ -3169,6 +2929,8 @@ float4 PS_RenderCRTScene(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
             col *= s;
         }
     }
+    if (debug_view == 13)
+        return float4(s.xxx, 1.0);
 
     // Keep the image in linear light until bloom is added. The RGBA16F scene target retains
     // highlights above 1.0 while reducing full-resolution render-target bandwidth.
@@ -3193,7 +2955,10 @@ float halation_brightpass(float2 uv)
 
 float4 PS_HalationBlurHorizontal(float4 pos : SV_Position, float2 uv : TEXCOORD0) : SV_Target
 {
-    if (halation_strength <= 0.00001)
+    bool halation_diagnostic = (debug_view >= 14 && debug_view <= 16);
+    if (debug_view == 14)
+        return float4(halation_brightpass(uv) * 4.0, 0.0, 0.0, 0.0);
+    if (halation_strength <= 0.00001 && !halation_diagnostic)
         return float4(0.0, 0.0, 0.0, 0.0);
     if (blur_x <= 0.00001)
         return float4(halation_brightpass(uv), 0.0, 0.0, 0.0);
@@ -3214,7 +2979,9 @@ float4 PS_HalationBlurHorizontal(float4 pos : SV_Position, float2 uv : TEXCOORD0
 }
 float4 PS_HalationBlurVertical(float4 pos : SV_Position, float2 uv : TEXCOORD0) : SV_Target
 {
-    if (halation_strength <= 0.00001)
+    if (debug_view == 14 || debug_view == 15)
+        return float4(0.0, 0.0, 0.0, 0.0);
+    if (halation_strength <= 0.00001 && debug_view != 16)
         return float4(0.0, 0.0, 0.0, 0.0);
     if (blur_y <= 0.00001)
         return float4(tex2D(GaussianBlurTempSampler, uv).r * blur_valid_y(uv.y), 0.0, 0.0, 0.0);
@@ -3634,14 +3401,35 @@ float4 PS_CompositeBloom(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
 {
     float2 screen_size = ReShade::ScreenSize.xy;
 
-    // Keep raw intermediate diagnostics unprojected. These views are intended to inspect
-    // source/history/mask/bloom buffers rather than the final faceplate presentation.
+    // Intermediate diagnostics are unprojected unless the inspected stage is geometry itself.
     if (debug_view > 0 && debug_view <= 5)
         return float4(tex2D(sCrtScene, uv_tx).rgb, 1.0);
     if (debug_view == 7 || debug_view == 8)
         return float4(saturate(tex2D(sBloomA, uv_tx).rgb * 4.0), 1.0);
+    if (debug_view == 9)
+        return float4(filmic(tex2D(sSmoothH, uv_tx).rgb), 1.0);
+    if (debug_view == 10)
+        return float4(filmic(tex2D(sSmoothV, uv_tx).rgb), 1.0);
+    if (debug_view == 11)
+    {
+        float detail = saturate(tex2D(sSmoothV, uv_tx).a);
+        return float4(detail.xxx, 1.0);
+    }
+    if (debug_view == 12 || debug_view == 13 || debug_view == 19 || debug_view == 20)
+        return float4(tex2D(sCrtScene, uv_tx).rgb, 1.0);
+    if (debug_view == 14)
+        return float4(saturate(tex2D(GaussianBlurTempSampler, uv_tx).r).xxx, 1.0);
+    if (debug_view == 15)
+        return float4(saturate(tex2D(GaussianBlurTempSampler, uv_tx).r * 4.0).xxx, 1.0);
+    if (debug_view == 16)
+        return float4(saturate(tex2D(GaussianBlurSampler, uv_tx).r * 4.0).xxx, 1.0);
 
     float2 geometry_uv = project_crt_surface(uv_tx, screen_size);
+    if (debug_view == 18)
+    {
+        float coverage = crt_surface_coverage(geometry_uv, screen_size);
+        return float4(coverage.xxx, 1.0);
+    }
     float geometry_mask;
     float scanline_factor;
     float3 col = sample_crt_surface(
@@ -3667,6 +3455,11 @@ float4 PS_CompositeBloom(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
     float2 uv = geometry_uv.xy;
     uv.y = 1.0 - geometry_uv.y;
     float2 screen_uv = lerp(screen_fit_uv(uv), uv, 0.4);
+    if (debug_view == 17)
+    {
+        float debug_vignette = vignette_multiplier(screen_uv, uv_tx * screen_size);
+        return float4(saturate(debug_vignette / 1.3).xxx, 1.0);
+    }
     float frame_clock = animation_frame_clock();
     float time = mod(frame_clock, 640.0);
 
