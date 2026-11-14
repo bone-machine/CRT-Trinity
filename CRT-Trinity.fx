@@ -166,6 +166,34 @@ uniform float black_level <
 > = 0.004;
 
 
+// These spatial finishing controls are grouped with the image-level adjustments.
+uniform float vignette_strength <
+    ui_type = "drag";
+    ui_min = 0.0;
+    ui_max = 1.5;
+    ui_step = 0.05;
+    ui_label = "Vignette Strength";
+    ui_category = "Image & Color";
+> = 0.5;
+
+uniform int vignette_mapping <
+    ui_type = "combo";
+    ui_items = "Legacy Fit\0Symmetric Viewport\0";
+    ui_label = "Vignette Mapping";
+    ui_category = "Image & Color";
+    ui_tooltip = "Symmetric Viewport (default) evaluates the vignette in normalized coordinates of DuckStation's active image viewport, giving matching falloff at all four image edges. Legacy Fit preserves the existing NewPixie-derived framing coordinates.";
+> = 1;
+
+uniform float fringe_amount <
+    ui_type = "drag";
+    ui_min = 0.0;
+    ui_max = 3.0;
+    ui_step = 0.05;
+    ui_label = "Color Fringing";
+    ui_category = "Image & Color";
+    ui_tooltip = "Offsets the red, green and blue source sampling positions slightly to approximate mild channel misregistration.";
+> = 0.15;
+
 uniform float edge_zoom <
     ui_type = "drag";
     ui_min = 1.0;
@@ -175,6 +203,7 @@ uniform float edge_zoom <
     ui_category = "Image & Color";
     ui_tooltip = "Enlarges the displayed image within the active viewport, cropping the outer edges.";
 > = 1.0;
+
 
 // SOURCE IMAGE FILTERING ---------------------------------------------------------
 
@@ -249,6 +278,7 @@ uniform float surface_radius <
 > = 8.0;
 
 uniform float surface_radius_horizontal <
+    hidden = true;
     ui_type = "drag";
     ui_min = 2.0;
     ui_max = 40.0;
@@ -259,6 +289,7 @@ uniform float surface_radius_horizontal <
 > = 6.0;
 
 uniform float surface_radius_vertical <
+    hidden = true;
     ui_type = "drag";
     ui_min = 2.0;
     ui_max = 40.0;
@@ -269,6 +300,7 @@ uniform float surface_radius_vertical <
 > = 12.0;
 
 uniform float surface_aspheric_departure <
+    hidden = true;
     ui_type = "drag";
     ui_min = -0.12;
     ui_max = 0.12;
@@ -309,6 +341,7 @@ uniform float camera_vertical_offset <
 > = 0.0;
 
 uniform float screen_corner_radius <
+    hidden = true;
     ui_type = "drag";
     ui_min = 0.0;
     ui_max = 0.08;
@@ -328,18 +361,15 @@ uniform int geometry_antialiasing <
 
 // SCANLINES & BEAM --------------------------------------------------------------
 
+// Retained as a hidden compatibility gate. The UI now uses Scanline Strength = 0
+// as its sole visible way to disable beam modulation; this default remains enabled.
 uniform bool scanlines_enabled <
+    hidden = true;
     ui_type = "boolean";
     ui_label = "Enable Scanlines";
     ui_category = "Scanlines & Beam";
-    ui_tooltip = "Disables vertical scanline beam modulation when unchecked. Phosphor masks and their damping wires remain active.";
+    ui_tooltip = "Hidden compatibility master gate. The visible Scanline Strength control can disable vertical beam modulation by setting it to 0.";
 > = true;
-
-uniform int fixed_beam_shape_help <
-    ui_label = " ";
-    ui_text = "Fixed beam shape: Gaussian Beam scanlines, Gaussian spot kernel and Single Lobe horizontal spot.";
-    ui_category = "Scanlines & Beam";
-> = 0;
 
 uniform float scanline_strength <
     ui_type = "drag";
@@ -348,8 +378,15 @@ uniform float scanline_strength <
     ui_step = 0.05;
     ui_label = "Scanline Strength";
     ui_category = "Scanlines & Beam";
-    ui_tooltip = "Controls the strength of the Gaussian beam modulation. 0 leaves the image vertically unmodulated.";
+    ui_tooltip = "Controls the strength of the Gaussian beam modulation. Set to 0 to disable vertical beam modulation; phosphor masks and damping wires remain active.";
 > = 1.7;
+
+uniform int fixed_beam_shape_help <
+    ui_label = " ";
+    ui_text = "Fixed beam shape: Gaussian Beam scanlines, Gaussian spot kernel and Single Lobe horizontal spot.";
+    ui_category = "Scanlines & Beam";
+> = 0;
+
 
 uniform int vertical_beam_model <
     ui_type = "combo";
@@ -422,16 +459,16 @@ uniform float scanline_lines <
     ui_min = 0.0;
     ui_max = 625.0;
     ui_step = 1.0;
-    ui_label = "Source-Line Frequency (0 = stock pitch)";
+    ui_label = "Manual Scanline Density";
     ui_category = "Scanlines & Beam";
-    ui_tooltip = "Manual scanline frequency. Ignored while Match Scanlines to Source Resolution is enabled; 0 preserves the original NewPixie pitch otherwise.";
+    ui_tooltip = "Sets the spatial density of the vertical beam pattern. Higher values produce more closely spaced scanlines; 0 uses the original NewPixie pitch, which varies with output resolution. This is not a refresh-rate setting and is ignored when Match Scanlines to Native Resolution is enabled with valid DuckStation native dimensions.";
 > = 340.0;
 
 uniform bool native_scanline_pitch <
     ui_type = "boolean";
-    ui_label = "Match Scanlines to Source Resolution";
+    ui_label = "Match Scanlines to Native Resolution";
     ui_category = "Scanlines & Beam";
-    ui_tooltip = "Derives scanline spacing from DuckStation's native frame dimensions. When enabled, it overrides Source-Line Frequency; when disabled, the stock or manual pitch is used.";
+    ui_tooltip = "Derives vertical beam spacing from DuckStation's native raster height (NativeHeight), mapped to the active viewport; it does not use enhanced internal resolution or monitor refresh rate. When valid native dimensions are available, this overrides Manual Scanline Density; otherwise manual or stock pitch is used.";
 > = false;
 
 uniform bool interlace <
@@ -448,7 +485,7 @@ uniform bool scanroll <
     ui_tooltip = "Continuously moves the Gaussian beam phase using elapsed time. Disable it to isolate Alternating Field Phase.";
 > = true;
 
-// 13 user-adjustable Scanlines & Beam settings. Beam profile, spot profile and horizontal
+// 12 user-adjustable Scanlines & Beam settings. Beam profile, spot profile and horizontal
 // spot structure are fixed to Gaussian Beam / Gaussian / Single Lobe in this shader.
 
 // DuckStation supplies the active native raster dimensions and final viewport.
@@ -462,80 +499,6 @@ uniform float InternalWidth < source = "internalwidth"; >;
 uniform float InternalHeight < source = "internalheight"; >;
 uniform float2 ViewportOffset < source = "viewportoffset"; >;
 uniform float2 ViewportSize < source = "viewportsize"; >;
-
-// CRT ARTIFACTS & PERSISTENCE ---------------------------------------------------
-
-uniform float vignette_strength <
-    ui_type = "drag";
-    ui_min = 0.0;
-    ui_max = 1.5;
-    ui_step = 0.05;
-    ui_label = "Vignette Strength";
-    ui_category = "CRT Artifacts & Persistence";
-> = 0.5;
-
-uniform int vignette_mapping <
-    ui_type = "combo";
-    ui_items = "Legacy Fit\0Symmetric Viewport\0";
-    ui_label = "Vignette Mapping";
-    ui_category = "CRT Artifacts & Persistence";
-    ui_tooltip = "Symmetric Viewport (default) evaluates the vignette in normalized coordinates of DuckStation's active image viewport, giving matching falloff at all four image edges. Legacy Fit preserves the existing NewPixie-derived framing coordinates.";
-> = 1;
-
-uniform float flicker_amount <
-    ui_type = "drag";
-    ui_min = 0.0;
-    ui_max = 0.03;
-    ui_step = 0.001;
-    ui_label = "Flicker Amount";
-    ui_category = "CRT Artifacts & Persistence";
-> = 0.003;
-
-uniform float fringe_amount <
-    ui_type = "drag";
-    ui_min = 0.0;
-    ui_max = 3.0;
-    ui_step = 0.05;
-    ui_label = "Color Fringing";
-    ui_category = "CRT Artifacts & Persistence";
-> = 0.15;
-
-uniform float acc_modulate <
-    ui_type = "drag";
-    ui_min = 0.0;
-    ui_max = 0.99;
-    ui_step = 0.01;
-    ui_label = "Temporal Trail Persistence";
-    ui_category = "CRT Artifacts & Persistence";
-    ui_tooltip = "Fraction of previous-frame linear light retained where the picture got darker. 0 disables trails; higher values need retuning compared with the original encoded-domain accumulation.";
-> = 0.0;
-
-uniform bool history_reset <
-    ui_type = "boolean";
-    ui_label = "Reset History";
-    ui_category = "CRT Artifacts & Persistence";
-    ui_tooltip = "Hold on to clear temporal history; toggle on/off after a target resize. First frame is cleared automatically.";
-> = false;
-
-uniform float interference_strength <
-    ui_type = "drag";
-    ui_min = 0.0;
-    ui_max = 2.0;
-    ui_step = 0.01;
-    ui_label = "Interference Strength";
-    ui_category = "CRT Artifacts & Persistence";
-    ui_tooltip = "Controls the animated horizontal signal wobble. 0 disables it; 1 uses the original effect strength.";
-> = 0.0;
-
-uniform float interference_speed <
-    ui_type = "drag";
-    ui_min = 0.0;
-    ui_max = 3.0;
-    ui_step = 0.05;
-    ui_label = "Interference Speed";
-    ui_category = "CRT Artifacts & Persistence";
-    ui_tooltip = "Controls how quickly the wobble moves. 1 preserves the original animation speed; 0 freezes its phase.";
-> = 1.0;
 
 // NOISE & GRAIN -----------------------------------------------------------------
 // Grain can follow output pixels or the native source raster, and can adapt to local detail/color.
@@ -568,6 +531,7 @@ uniform bool headroom_aware_grain <
 > = true;
 
 uniform float noise_chroma <
+    hidden = true;
     ui_type = "drag";
     ui_min = 0.0;
     ui_max = 1.0;
@@ -606,6 +570,7 @@ uniform int noise_alignment <
 > = 0;
 
 uniform float noise_detail_protection <
+    hidden = true;
     ui_type = "drag";
     ui_min = 0.0;
     ui_max = 1.0;
@@ -616,6 +581,7 @@ uniform float noise_detail_protection <
 > = 0.50;
 
 uniform float noise_color_awareness <
+    hidden = true;
     ui_type = "drag";
     ui_min = 0.0;
     ui_max = 1.0;
@@ -624,6 +590,56 @@ uniform float noise_color_awareness <
     ui_category = "Noise & Grain";
     ui_tooltip = "Adapts Grain Chroma to the rendered colour. Near-neutral areas receive mostly monochromatic grain; moderately coloured areas retain chroma, while highly saturated details get gentler colour variation. 0 disables this adaptation.";
 > = 0.25;
+
+// SIGNAL & TEMPORAL EFFECTS ------------------------------------------------------
+// These follow Noise & Grain in the UI. The final flicker remains implemented but hidden.
+uniform float acc_modulate <
+    ui_type = "drag";
+    ui_min = 0.0;
+    ui_max = 0.99;
+    ui_step = 0.01;
+    ui_label = "Temporal Trail Persistence";
+    ui_category = "Signal & Temporal Effects";
+    ui_tooltip = "Fraction of previous-frame linear light retained where the picture got darker. 0 disables trails; higher values need retuning compared with the original encoded-domain accumulation.";
+> = 0.0;
+
+uniform bool history_reset <
+    ui_type = "boolean";
+    ui_label = "Reset History";
+    ui_category = "Signal & Temporal Effects";
+    ui_tooltip = "Hold on to clear temporal history; toggle on/off after a target resize. First frame is cleared automatically.";
+> = false;
+
+uniform float interference_strength <
+    ui_type = "drag";
+    ui_min = 0.0;
+    ui_max = 2.0;
+    ui_step = 0.01;
+    ui_label = "Interference Strength";
+    ui_category = "Signal & Temporal Effects";
+    ui_tooltip = "Controls the animated horizontal signal wobble. 0 disables it; 1 uses the original effect strength.";
+> = 0.0;
+
+uniform float interference_speed <
+    ui_type = "drag";
+    ui_min = 0.0;
+    ui_max = 3.0;
+    ui_step = 0.05;
+    ui_label = "Interference Speed";
+    ui_category = "Signal & Temporal Effects";
+    ui_tooltip = "Controls how quickly the wobble moves. 1 preserves the original animation speed; 0 freezes its phase.";
+> = 1.0;
+
+uniform float flicker_amount <
+    hidden = true;
+    ui_type = "drag";
+    ui_min = 0.0;
+    ui_max = 0.03;
+    ui_step = 0.001;
+    ui_label = "Flicker Amount";
+    ui_category = "Signal & Temporal Effects";
+    ui_tooltip = "Hidden fixed aesthetic brightness modulation. Retained for implementation continuity; not the Field-Phase Flicker effect.";
+> = 0.003;
 
 // GLOW & GHOSTING --------------------------------------------------------
 
@@ -923,7 +939,7 @@ uniform int field_phase_flicker_help <
     ui_category = "Experimental";
 > = 0;
 
-// Field-Phase Flicker pins the 13 user-adjustable Scanlines & Beam controls to their
+// Field-Phase Flicker pins the 12 user-adjustable Scanlines & Beam controls to their
 // documented saved defaults, then applies its explicit model/phase overrides. The beam
 // profile, spot kernel and horizontal structure are fixed Gaussian / Gaussian / Single Lobe.
 #define PX_SCANLINES_ENABLED          (field_phase_flicker ? true  : scanlines_enabled)
@@ -2909,7 +2925,7 @@ float4 PS_RenderCRTScene(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
     float scans = 1.0;
     float s = 1.0;
 
-    if (PX_SCANLINES_ENABLED)
+    if (PX_SCANLINES_ENABLED && PX_SCANLINE_STRENGTH > 0.0001)
     {
         if (PX_VERTICAL_BEAM_MODEL == 1)
         {
