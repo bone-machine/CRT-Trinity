@@ -13,7 +13,7 @@ The main game references are *Castlevania: Symphony of the Night* and *Metal Gea
 ## Main techniques
 
 - **Internal-resolution-aware source reconstruction** — uses DuckStation's enhanced internal grid while keeping CRT raster pitch tied to native game dimensions.
-- **Edge-aware pixel smoothing** — combines square-root RGB distance, YCoCg-like colour distance and directional structure-tensor analysis to reduce smoothing across edges.
+- **Subpixel Blend reconstruction (default)**, with optional **Edge-Aware Pixel Smoothing** — the edge-aware path combines square-root RGB distance, YCoCg-like colour distance and directional structure-tensor analysis to reduce smoothing across edges.
 - **Pixel-integrated beam profiles** — supports Sine and Gaussian Beam scanlines, plus Gaussian, Super-Gaussian and Lorentzian spot profiles.
 - **Shared and per-source-line RGB beam models** — offers a shared luminance-driven beam or independent source-line/channel response.
 - **Single Lobe / Core + Tail spot reconstruction** — the optional wider tail redistributes part of the normalized spot energy.
@@ -51,7 +51,9 @@ The shader exposes the following controls in DuckStation. Items that are self-ex
 
 ### Source Image Filtering
 
-- **Pixel Smoothing** — edge-aware reconstruction of source samples; `0` disables it.
+- **Pixel Smoothing Mode** — Subpixel Blend (default), Edge-Aware or Hybrid reconstruction.
+- **Pixel Smoothing** — strength of the selected reconstruction; `0` disables it.
+- **Adjacent-Tap Edge Blending** — optional cached edge-aware filtering for the two horizontal taps beside the centre tap; only affects Edge-Aware and Hybrid modes. Off by default.
 - **Horizontal Source-Pixel Smoothing** and **Vertical Source-Pixel Smoothing** — add horizontal and vertical Gaussian reconstruction width before the CRT beam treatment.
 
 ### Screen Geometry
@@ -74,6 +76,7 @@ The shader exposes the following controls in DuckStation. Items that are self-ex
 - **Horizontal Spot Structure** — Single Lobe or Core + Tail.
 - **Horizontal Spot Tail Energy (%)** and **Horizontal Spot Tail Width (x)** — set the energy and relative width of the optional tail; used only with Core + Tail.
 - **Vertical Beam Model** — Shared Beam or Per-source-line RGB.
+- **Per-source-line RGB Attenuation** — Source-Domain is the default and retains the original early attenuation; Post-Display (Shared Beam-aligned) applies its RGB factor alongside the late Shared Beam stage. Only affects Per-source-line RGB. Field-Phase Flicker temporarily forces Post-Display while enabled.
 - **Horizontal Beam Spot Width** — adds horizontal beam width to source reconstruction.
 - **Beam Current Response** — shapes the relationship between source drive and beam widening.
 - **Beam Average Drive** — sets the mean output level of the normalized vertical beam.
@@ -83,7 +86,8 @@ The shader exposes the following controls in DuckStation. Items that are self-ex
 
 ### CRT Artifacts & Persistence
 
-- **Vignette Strength**, **Flicker Amount** and **Color Fringing**.
+- **Vignette Strength** and **Vignette Mapping** — Symmetric Viewport is the default and evaluates edge falloff against the active image rectangle; Legacy Fit preserves the previous framing.
+- **Flicker Amount** and **Color Fringing**.
 - **Temporal Trail Persistence** — controls retention of previous-frame highlights; `0` disables trails.
 - **Reset History** — clears accumulated temporal history; useful after a target resize.
 - **Interference Strength** and **Interference Speed** — control the animated horizontal wobble.
@@ -92,6 +96,7 @@ The shader exposes the following controls in DuckStation. Items that are self-ex
 
 - **Noise Amount** — grain intensity.
 - **Luminance Adaptation** — changes grain strength with image brightness.
+- **Headroom-Aware Grain** — optional, off by default; symmetrically reduces grain excursions near black and white to avoid one-sided output clipping.
 - **Grain Chroma** — blends neutral and independently varying RGB grain.
 - **Grain Animation Speed** — controls temporal evolution; `0` freezes it.
 - **Grain Size** — controls the grain's spatial scale.
@@ -127,7 +132,7 @@ Used when Shadow Mask (Staggered Dots) is selected: **Mask Strength (Custom)**, 
 
 ### Experimental
 
-- **Field-Phase Flicker** — overrides all Scanlines & Beam settings while enabled, using that section's defaults except that it forces Per-source-line RGB, turns Rolling Scanlines off and turns Alternating Field Phase on. The UI selections are preserved and resume when the experiment is disabled. This is a procedural alternating-frame effect, not separate-field 480i reconstruction.
+- **Field-Phase Flicker (off by default)** — overrides all Scanlines & Beam settings while enabled, using that section's saved defaults except that it forces Per-source-line RGB with Post-Display (Shared Beam-aligned) attenuation, turns Rolling Scanlines off and turns Alternating Field Phase on. `FCount` parity alternates the phase between 0 and π on successive rendered frames, shifting the Gaussian Per-source-line RGB beam pattern by half a scanline period. The source-line sample positions remain anchored, but the beam weights of neighbouring lines are redistributed every frame. This produces a pronounced CRT-like flicker that can look like an extremely fast top-to-bottom flicker. The forced Source-Line Frequency of 340 sets the spatial density of the pattern, not its animation speed; with Rolling Scanlines disabled, the phase alternation is driven by rendered-frame parity. At 60 rendered FPS, the phase state changes every frame and the two-frame pattern repeats at 30 Hz; the rate scales with the actual rendered frame rate. The Post-Display attenuation stage affects where the per-channel beam factor is applied in the colour pipeline, not the flicker timing. Other image settings can alter the appearance but do not drive this rapid phase switching. This is a global procedural phase alternation, not a physical beam sweeping down the screen or true 480i field reconstruction. The flicker can be intense and may cause eye strain or dizziness for some viewers, so experiment with it in motion and consider viewing comfort. The UI selections are preserved and resume when the experiment is disabled.
 
 ### Diagnostics
 
