@@ -106,13 +106,13 @@ uniform int phosphor_mask_selection <
     ui_items = "Use Display Profile Default\0Aperture Grille\0Slot Mask\0Shadow Mask (Staggered Dots)\0None\0";
     ui_label = "Phosphor Mask Type";
     ui_category = "Display Setup";
-    ui_tooltip = "Use Display Profile Default follows the pairing described below. Any explicit mask choice overrides only the mask and uses that mask type’s Custom settings. The selected display colour profile remains active. None disables the mask.";
+    ui_tooltip = "Use Display Profile Default follows the selected profile’s built-in mask and settings. An explicit mask choice uses the corresponding group under Phosphor Mask Settings and overrides only the mask. The display colour profile remains active. None disables the mask.";
 > = 0;
 
 uniform int phosphor_mask_help
 <
     ui_label = " ";
-    ui_text = "Defaults: Sony Trinitron and Neutral use Aperture Grille; Toshiba AF uses Slot Mask. Choose another mask to edit its values in the matching Custom submenu below. Display profile colors remain unchanged.";
+    ui_text = "Defaults: Sony Trinitron and Neutral use Aperture Grille; Toshiba AF uses Slot Mask. Explicit mask selection changes only the mask; the display profile remains active.";
     ui_category = "Display Setup";
 > = 0;
 
@@ -733,7 +733,22 @@ uniform float bloom_radius <
     ui_tooltip = "Approximate maximum blur reach on each axis at 1080p. Scales with output height; highlights are prefiltered to quarter resolution before a separable Gaussian blur.";
 > = 8.0;
 
-// APERTURE GRILLE (CUSTOM) ------------------------------------------------------
+// PHOSPHOR MASK SETTINGS -------------------------------------------------------
+// Profile defaults use built-in mask constants. The editable groups below apply
+// when the corresponding mask is explicitly selected in Display Setup.
+
+uniform int phosphor_mask_settings_help <
+    ui_label = " ";
+    ui_text = "To customize a phosphor mask, select Aperture Grille, Slot Mask or Staggered Shadow Mask under Display Setup → Phosphor Mask Type. Use Display Profile Default to retain the selected profile's predefined mask and settings.";
+    ui_category = "Phosphor Mask Settings";
+    ui_category_closed = true;
+> = 0;
+
+uniform int aperture_grille_group_label <
+    ui_label = " ";
+    ui_text = "- Aperture Grille -";
+    ui_category = "Phosphor Mask Settings";
+> = 0;
 
 uniform float aperture_custom_strength <
     ui_type = "drag";
@@ -741,9 +756,8 @@ uniform float aperture_custom_strength <
     ui_max = 0.5;
     ui_step = 0.001;
     ui_label = "Mask Strength (Custom)";
-    ui_category = "Aperture Grille (Custom)";
-    ui_category_closed = true;
-    ui_tooltip = "Aperture-grille-only strength. Used when Aperture Grille is explicitly selected in Phosphor Mask Type.";
+    ui_category = "Phosphor Mask Settings";
+    ui_tooltip = "Aperture-grille-only strength. Used when Aperture Grille is explicitly selected in Display Setup → Phosphor Mask Type.";
 > = 0.24;
 
 uniform float aperture_custom_pitch <
@@ -752,7 +766,7 @@ uniform float aperture_custom_pitch <
     ui_max = 12.0;
     ui_step = 0.25;
     ui_label = "Triad Pitch (pixels at 1080p)";
-    ui_category = "Aperture Grille (Custom)";
+    ui_category = "Phosphor Mask Settings";
     ui_tooltip = "Aperture-grille-only RGB triad pitch, scaled with active viewport height. The rendered triplet period is kept at least 3 output pixels to avoid low-resolution colour aliasing.";
 > = 3.0;
 
@@ -762,7 +776,7 @@ uniform float aperture_custom_stripe_width <
     ui_max = 1.0;
     ui_step = 0.01;
     ui_label = "Stripe / Aperture Width";
-    ui_category = "Aperture Grille (Custom)";
+    ui_category = "Phosphor Mask Settings";
     ui_tooltip = "Aperture-grille-only emitting width as a fraction of one RGB cell.";
 > = 0.95;
 
@@ -772,14 +786,14 @@ uniform float aperture_custom_gap <
     ui_max = 0.5;
     ui_step = 0.01;
     ui_label = "Inter-Stripe Gap";
-    ui_category = "Aperture Grille (Custom)";
+    ui_category = "Phosphor Mask Settings";
     ui_tooltip = "Minimum dark separation between aperture-grille phosphor stripes, as a fraction of one RGB cell.";
 > = 0.10;
 
 uniform bool aperture_custom_damper_wires <
     ui_type = "boolean";
     ui_label = "Show Grille Damping Wires";
-    ui_category = "Aperture Grille (Custom)";
+    ui_category = "Phosphor Mask Settings";
     ui_tooltip = "Two subtle horizontal support wires, present on many but not all aperture-grille tubes.";
 > = false;
 
@@ -789,10 +803,14 @@ uniform float aperture_custom_wire_strength <
     ui_max = 0.2;
     ui_step = 0.001;
     ui_label = "Damping Wire Strength";
-    ui_category = "Aperture Grille (Custom)";
+    ui_category = "Phosphor Mask Settings";
 > = 0.05;
 
-// SLOT MASK (CUSTOM) ------------------------------------------------------------
+uniform int slot_mask_group_label <
+    ui_label = " ";
+    ui_text = "- Slot Mask -";
+    ui_category = "Phosphor Mask Settings";
+> = 0;
 
 uniform float slot_custom_strength <
     ui_type = "drag";
@@ -800,9 +818,8 @@ uniform float slot_custom_strength <
     ui_max = 0.5;
     ui_step = 0.001;
     ui_label = "Mask Strength (Custom)";
-    ui_category = "Slot Mask (Custom)";
-    ui_category_closed = true;
-    ui_tooltip = "Slot-mask-only strength. Used when Slot Mask is explicitly selected in Phosphor Mask Type.";
+    ui_category = "Phosphor Mask Settings";
+    ui_tooltip = "Slot-mask-only strength. Used when Slot Mask is explicitly selected in Display Setup → Phosphor Mask Type.";
 > = 0.4;
 
 uniform float slot_custom_pitch <
@@ -811,7 +828,7 @@ uniform float slot_custom_pitch <
     ui_max = 12.0;
     ui_step = 0.25;
     ui_label = "Triad Pitch (pixels at 1080p)";
-    ui_category = "Slot Mask (Custom)";
+    ui_category = "Phosphor Mask Settings";
     ui_tooltip = "Slot-mask-only RGB triad pitch, scaled with output height. Used when Slot Mask is explicitly selected.";
 > = 4.0;
 
@@ -821,7 +838,7 @@ uniform float slot_custom_stripe_width <
     ui_max = 1.0;
     ui_step = 0.01;
     ui_label = "Slot Width";
-    ui_category = "Slot Mask (Custom)";
+    ui_category = "Phosphor Mask Settings";
     ui_tooltip = "Width of each emitting vertical colour slot, as a fraction of one RGB cell.";
 > = 0.6;
 
@@ -831,7 +848,7 @@ uniform float slot_custom_gap <
     ui_max = 0.5;
     ui_step = 0.01;
     ui_label = "Inter-Slot Gap";
-    ui_category = "Slot Mask (Custom)";
+    ui_category = "Phosphor Mask Settings";
     ui_tooltip = "Minimum dark separation between adjacent colour slots, as a fraction of one RGB cell.";
 > = 0.5;
 
@@ -841,11 +858,15 @@ uniform float slot_custom_height <
     ui_max = 1.0;
     ui_step = 0.01;
     ui_label = "Slot Height";
-    ui_category = "Slot Mask (Custom)";
+    ui_category = "Phosphor Mask Settings";
     ui_tooltip = "Vertical emitting height of each slot, as a fraction of its row cell. 1 fills the full row cell vertically.";
 > = 1.0;
 
-// SHADOW MASK (CUSTOM) ----------------------------------------------------------
+uniform int staggered_shadow_mask_group_label <
+    ui_label = " ";
+    ui_text = "- Staggered Shadow Mask -";
+    ui_category = "Phosphor Mask Settings";
+> = 0;
 
 uniform float shadow_custom_strength <
     ui_type = "drag";
@@ -853,9 +874,8 @@ uniform float shadow_custom_strength <
     ui_max = 0.5;
     ui_step = 0.001;
     ui_label = "Mask Strength (Custom)";
-    ui_category = "Shadow Mask (Custom)";
-    ui_tooltip = "Shadow-mask-only strength. Used when Shadow Mask is explicitly selected.";
-    ui_category_closed = true;
+    ui_category = "Phosphor Mask Settings";
+    ui_tooltip = "Staggered-shadow-mask-only strength. Used when Shadow Mask (Staggered Dots) is explicitly selected in Display Setup → Phosphor Mask Type.";
 > = 0.24;
 
 uniform float shadow_custom_pitch <
@@ -864,8 +884,8 @@ uniform float shadow_custom_pitch <
     ui_max = 12.0;
     ui_step = 0.25;
     ui_label = "Triad Pitch (pixels at 1080p)";
-    ui_category = "Shadow Mask (Custom)";
-    ui_tooltip = "Shadow-mask-only RGB triad pitch, scaled with output height.";
+    ui_category = "Phosphor Mask Settings";
+    ui_tooltip = "Staggered-shadow-mask-only RGB triad pitch, scaled with output height.";
 > = 3.0;
 
 uniform float shadow_custom_dot_width <
@@ -874,7 +894,7 @@ uniform float shadow_custom_dot_width <
     ui_max = 1.0;
     ui_step = 0.01;
     ui_label = "Dot Width";
-    ui_category = "Shadow Mask (Custom)";
+    ui_category = "Phosphor Mask Settings";
     ui_tooltip = "Controls the horizontal size of the staggered phosphor dots.";
 > = 0.95;
 
@@ -884,7 +904,7 @@ uniform float shadow_custom_gap <
     ui_max = 0.5;
     ui_step = 0.01;
     ui_label = "Dot Gap";
-    ui_category = "Shadow Mask (Custom)";
+    ui_category = "Phosphor Mask Settings";
     ui_tooltip = "Minimum dark separation between the dots, as a fraction of one RGB cell.";
 > = 0.10;
 

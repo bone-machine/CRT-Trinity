@@ -182,7 +182,7 @@ The following table records the current saved defaults and fixed rendering choic
 | Shadow Mask Custom Defaults | `0.24`, `3.0`, `0.95`, `0.10` | Mask strength, pitch, dot width and gap. |
 | Debug View | Off (`0`) | Normal rendering; 20 additional intermediate inspection views are available. |
 
-Built-in mask defaults are internal constants selected when `Use Display Profile Default` is active. They are not the same as the editable values in the three Custom mask categories. The custom values are documented in §14.11.
+Built-in mask defaults are internal constants selected when `Use Display Profile Default` is active. They are not the same as the editable values in the three mask-specific groups within the single `Phosphor Mask Settings` UI category. The custom values are documented in §14.11.
 
 ## 4. Rendering architecture and pass graph
 
@@ -585,7 +585,7 @@ The phosphor mask modulates the individual RGB channel drives in `PS_RenderCRTSc
 | Toshiba AF — Warm Cinema | Slot Mask |
 | Neutral — Standard | Aperture Grille |
 
-Selector `Use Display Profile Default` uses the pairing above and built-in mask constants. Explicit selections map to Aperture Grille, Slot Mask, Shadow Mask or None and use the matching Custom controls. An explicit mask changes only the mask; it does not change the display-colour profile. `None` returns a neutral `(1,1,1)` mask.
+Selector `Use Display Profile Default` uses the pairing above and built-in mask constants. Explicit selections map to Aperture Grille, Slot Mask, Shadow Mask or None and use the matching mask-specific group in the single `Phosphor Mask Settings` UI category. The category begins with a legend directing users to `Display Setup → Phosphor Mask Type`; only the group for the explicitly selected mask affects rendering. An explicit mask changes only the mask; it does not change the display-colour profile. `None` returns a neutral `(1,1,1)` mask.
 
 ### 8.2 Aperture Grille
 
@@ -954,7 +954,7 @@ The top-level version text is `v1`. Do not reintroduce historic version-series l
 |---|---:|---|---|
 | `display_profile` | `0` | Seven profile items, see §9 | Selects display colour transform. Japanese Cool is first/default; Neutral — Standard is last and bypasses only the profile transform. |
 | `phosphor_mask_selection` | `0` | Profile Default / Aperture / Slot / Shadow / None | Automatic pairing or explicit mask selection; the mask does not change the display colour profile. |
-| `phosphor_mask_help` | `0` | Persistent text | Explains default mask pairing and custom submenus. |
+| `phosphor_mask_help` | `0` | Persistent text | Explains the automatic profile pairing and that explicit mask selection changes only the mask. |
 
 ### 14.3 Image & Color
 
@@ -1064,11 +1064,13 @@ Host source uniforms are not user settings: `NativeWidth`, `NativeHeight`, `Inte
 | `bloom_soft_knee` | `0.15` | `0–1`, `0.05` | Quadratic soft transition around the threshold. |
 | `bloom_radius` | `8.0` | `4–64`, `1` | Approximate blur reach in full-output pixels at 1080p. |
 
-### 14.11 Custom phosphor masks
+### 14.11 Phosphor Mask Settings
 
-These values are used when the corresponding explicit mask is selected. With `Use Display Profile Default`, built-in mask constants are used instead.
+All three mask-specific groups are presented together in one `Phosphor Mask Settings` UI category. The legend at the top directs the user to `Display Setup → Phosphor Mask Type`. `Use Display Profile Default` selects the profile's built-in mask and parameters; editable values below are used only when their corresponding mask is explicitly selected. Selecting an explicit mask changes the mask only, not the display-colour profile.
 
-**Aperture Grille (Custom)**
+The UI-only text uniforms `phosphor_mask_settings_help`, `aperture_grille_group_label`, `slot_mask_group_label` and `staggered_shadow_mask_group_label` provide the category legend and the three in-category group labels. They do not participate in rendering or change any mask parameters.
+
+**Aperture Grille**
 
 | Variable | Default | Range / step | Purpose |
 |---|---:|---|---|
@@ -1079,7 +1081,7 @@ These values are used when the corresponding explicit mask is selected. With `Us
 | `aperture_custom_damper_wires` | `false` | Boolean | Enables two viewport-relative, pixel-integrated wires. |
 | `aperture_custom_wire_strength` | `0.05` | `0–0.2`, `0.001` | Wire attenuation. |
 
-**Slot Mask (Custom)**
+**Slot Mask**
 
 | Variable | Default | Range / step | Purpose |
 |---|---:|---|---|
@@ -1089,7 +1091,7 @@ These values are used when the corresponding explicit mask is selected. With `Us
 | `slot_custom_gap` | `0.5` | `0–0.5`, `0.01` | Inter-slot gap. |
 | `slot_custom_height` | `1.0` | `0.25–1`, `0.01` | Vertical slot height relative to row pitch. |
 
-**Shadow Mask (Custom)**
+**Staggered Shadow Mask**
 
 | Variable | Default | Range / step | Purpose |
 |---|---:|---|---|

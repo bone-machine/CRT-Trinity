@@ -38,7 +38,7 @@ The shader exposes the following controls in DuckStation.
 ### Display Setup
 
 - **Display Color Profile** — selects the colour/white-point interpretation described above.
-- **Phosphor Mask Type** — chooses the profile's automatic mask, an explicit Aperture Grille, Slot Mask or Staggered Shadow Mask, or no mask. Selecting a mask here activates the matching **Custom** subsection below, where that mask's strength, pitch, shape and gap can be adjusted. The colour profile is left unchanged.
+- **Phosphor Mask Type** — chooses the profile's automatic mask, an explicit Aperture Grille, Slot Mask or Staggered Shadow Mask, or no mask. Selecting a mask here makes its matching group under **Phosphor Mask Settings** active for customization. The colour profile is left unchanged.
 
 ### Image & Color
 
@@ -108,17 +108,15 @@ The beam shape is fixed: **Gaussian Beam** scanlines, a **Gaussian** spot kernel
 
 - **Bloom Intensity**, **Bloom Threshold**, **Bloom Soft Knee** and **Bloom Radius (pixels at 1080p)** — control wide highlight spill, its cutoff/transition and blur reach. Bloom stacks with Halation. Setting Bloom Intensity to `0` disables its normal sampling and blur work, though its three passes remain scheduled.
 
-### Aperture Grille (Custom)
+### Phosphor Mask Settings
 
-Used when Aperture Grille is selected: **Mask Strength (Custom)**, **Triad Pitch (pixels at 1080p)**, **Stripe / Aperture Width**, **Inter-Stripe Gap**, **Show Grille Damping Wires** and **Damping Wire Strength**.
+To customize a phosphor mask, select Aperture Grille, Slot Mask or Staggered Shadow Mask under **Display Setup → Phosphor Mask Type**. Use **Use Display Profile Default** to retain the selected profile's predefined mask and settings. Only the group corresponding to an explicitly selected mask affects rendering.
 
-### Slot Mask (Custom)
+**Aperture Grille** — **Mask Strength (Custom)**, **Triad Pitch (pixels at 1080p)**, **Stripe / Aperture Width**, **Inter-Stripe Gap**, **Show Grille Damping Wires** and **Damping Wire Strength**.
 
-Used when Slot Mask is selected: **Mask Strength (Custom)**, **Triad Pitch (pixels at 1080p)**, **Slot Width**, **Inter-Slot Gap** and **Slot Height**.
+**Slot Mask** — **Mask Strength (Custom)**, **Triad Pitch (pixels at 1080p)**, **Slot Width**, **Inter-Slot Gap** and **Slot Height**.
 
-### Shadow Mask (Custom)
-
-Used when Shadow Mask (Staggered Dots) is selected: **Mask Strength (Custom)**, **Triad Pitch (pixels at 1080p)**, **Dot Width** and **Dot Gap**.
+**Staggered Shadow Mask** — **Mask Strength (Custom)**, **Triad Pitch (pixels at 1080p)**, **Dot Width** and **Dot Gap**.
 
 ### Experimental
 
