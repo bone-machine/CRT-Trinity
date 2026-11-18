@@ -2,22 +2,24 @@
 
 CRT-Trinity is a **highly user-configurable Sony Trinitron-inspired CRT post-processing ReShade FX shader for DuckStation**, distributed as a single `.fx` file. It builds on Mattias Gustavsson’s NewPixie CRT, with related adaptations credited below.
 
-The shader's overall design is based on selected characteristics of the **Sony Trinitron aperture-grille CRT family**, particularly its construction and operating behaviour, with a Japanese P22-inspired default. These ideas guide the phosphor structure, beam and scanline behaviour, and the overall display treatment. The shader recreates them through real-time screen-space approximations, not a complete physical simulation. Finishing effects such as grain, ghosting and bloom are aesthetic additions, not measured traits of every Trinitron.
+The shader's overall design draws on selected characteristics of the **Sony Trinitron aperture-grille CRT family**, particularly its phosphor structure and beam/scanline behaviour. The Japanese P22-inspired configuration is the primary reference, but the shader does not attempt to model any particular television in full.
 
-The defaults are simply what I liked best: a cool, slightly blue-ish picture with the CRT feel I wanted. This isn't a faithful electrical or optical emulation of a particular television. Some touches—grain, ghosting and bloom—are there because I think they look good, not because every CRT behaved that way. Change anything you like; the picture should be yours.
+The default preset represents the author's preferred presentation: a cool, slightly blue-toned CRT-inspired image treatment on a geometrically flat LCD presentation. Flat is the clean geometry reference; LCD Focus is an optional, subtle horizontal composition warp, while the original cylindrical and other virtual CRT faceplate profiles remain available. Grain, ghosting and bloom are optional aesthetic choices rather than universal properties of CRT displays. The settings remain adjustable; the defaults are a starting point, not a calibration target.
 
-I mainly tuned the look while playing *Castlevania: Symphony of the Night* and *Metal Gear Solid* on PlayStation. **It's ready to use with [Castlevania: Symphony of the Night Ultimate](https://github.com/renanbianchi/sotn-ultimate).** The related [SotN decompilation project](https://github.com/Xeeynamo/sotn-decomp) is also a useful reference. These are separate projects, not shader dependencies; CRT-Trinity does not include or distribute any game files, game code or game assets.
+Visual tuning focused primarily on the PlayStation versions of *Castlevania: Symphony of the Night* and *Metal Gear Solid*. CRT-Trinity is also compatible with [Castlevania: Symphony of the Night Ultimate](https://github.com/renanbianchi/sotn-ultimate), while the related [SotN decompilation project](https://github.com/Xeeynamo/sotn-decomp) served as a development reference. Neither project is required, and CRT-Trinity includes no game files, code or assets.
 
 ## Key Rendering Features
 
-- **Internal-resolution-aware reconstruction** — uses DuckStation's enhanced internal grid while keeping CRT raster pitch tied to native game dimensions.
-- **Subpixel Blend reconstruction (default)**, with optional **Edge-Aware** and **Hybrid** modes.
-- **Gaussian Beam scanlines and Gaussian spot kernel by default**, integrated over output-pixel footprints.
-- **Shared Beam and Per-source-line RGB** vertical beam models, with selectable Per-source-line RGB attenuation placement.
-- **Integrated horizontal spot reconstruction** — the default is a Gaussian Single Lobe spot.
-- **Phosphor masks** — Aperture Grille, Slot Mask and Staggered Shadow Mask, with optional aperture-grille damping wires.
-- **Temporal bright-trail persistence** — previous-frame highlights can be retained; this is not conventional motion blur or calibrated phosphor decay.
-- **Halation and multi-pass bloom**, plus time-based grain, Field-Phase Flicker and interference effects.
+- **Resolution-aware source reconstruction** — uses DuckStation's internal render grid, including enhanced resolutions, while retaining native game dimensions for optional native-resolution scanline alignment.
+- **Selectable source-filtering methods** — Subpixel Blend (default), Edge-Aware and Hybrid reconstruction, with independent horizontal and vertical source-pixel smoothing.
+- **Horizontal spot reconstruction** — integrates the spot kernel across each internal source-cell interval rather than point-sampling it. The default horizontal structure is Single Lobe; spot width combines with horizontal source-pixel smoothing.
+- **Vertical beam and scanline reconstruction** — uses a Gaussian Beam scanline profile and Gaussian spot kernel by default. Shared Beam derives one luminance-driven beam response for each output pixel; Per-source-line RGB reconstructs nearby beam-line contributions separately for red, green and blue. Both integrate beam contributions over each output pixel's vertical footprint. Per-source-line RGB also supports Source-Domain and Post-Display attenuation placement.
+- **Phosphor masks** — Aperture Grille, Slot Mask and Staggered Shadow Mask, with optional damping wires for the Aperture Grille.
+- **Display color profiles** — Sony Trinitron/P22-inspired, Toshiba AF/SMPTE-C and Neutral reference choices, with automatic mask pairings when **Use Display Profile Default** is selected.
+- **Screen geometry** — Flat (default), an optional LCD Focus horizontal composition warp, and Cylindrical, Spherical and Custom virtual faceplate profiles, with optional adaptive multi-tap reconstruction.
+- **Optical and image-finishing effects** — source-image ghosting, halation, multi-pass bloom, vignette and color fringing.
+- **Temporal processing** — optional bright-trail persistence, alternating field phase, rolling scanlines and horizontal signal interference; Field-Phase Flicker is available as a separate experimental mode.
+- **Animated grain** — with luminance adaptation and Output Pixels, Native Game Pixels or Mixed alignment.
 
 See `AGENTS.md` for the detailed mathematics, pass graph, resource handling, diagnostics and implementation notes.
 
@@ -58,10 +60,12 @@ Subpixel Blend averages source reconstruction at small, symmetric half-offset po
 
 ### Screen Geometry
 
-- **CRT Surface Profile** — Flat, Cylindrical, Spherical or Aspherical projection. Aspherical uses a predefined faceplate shape.
-- **Surface Radius** — curvature for Cylindrical and Spherical profiles.
-- **Virtual Camera Distance**, **Virtual Camera Horizontal Offset** and **Virtual Camera Vertical Offset** — adjust perspective and viewing position on curved profiles.
-- **Geometry Reconstruction** — Bilinear (1 tap), Adaptive up to 4 taps or Adaptive up to 8 taps.
+- **Screen Geometry Profile** — Flat (default), LCD Focus, Cylindrical, Spherical or Custom. Flat preserves the original image geometry. LCD Focus is a separate LCD-oriented, non-physical remapping: it slightly expands the centre horizontally, compensates toward the outer-middle image and keeps the viewport edges and vertical coordinates fixed. Because it is applied to the completed image, it also remaps HUD/interface elements. It does not add perspective, rounded corners or change the game aspect ratio.
+- **LCD Focus Strength** — controls that horizontal redistribution (`0–0.05`, default `0.02`). At `0.02`, the exact centre has 2% horizontal magnification; `0.05` is the 5% maximum. The mapping is viewport-local and does not stretch the image to another aspect ratio.
+- **Surface Radius** — the shared, literal radius for Cylindrical and Spherical profiles (2–40 screen half-widths).
+- **Custom Horizontal Curvature** and **Custom Vertical Curvature** — independently control the two axes of the Custom biconic surface. These use a nonlinear `0–100` scale rather than raw radius values. `0` is flat; equal values produce a spherical cap; setting Vertical to `0` gives a horizontally curved cylinder, while setting Horizontal to `0` gives a vertically curved cylinder. Approximate equivalent radii (in screen half-widths) are `8.97 → 248.5`, `20 → 50`, `50 → 8` and `100 → 2`. The quadratic mapping is monotonic but is not a calibrated perceptual scale. The default `8.97` / `8.97` approximates the very shallow, near-flat 50 m faceplate curvature reported for Sony's FD Trinitron GDM-F500, normalized from its 19.8-inch, 4:3 viewable area. This is a symmetric approximation, not a physical calibration of the full glass contour. Safety limits can reduce the strongest requested curvature at extreme camera/aspect settings.
+- **Virtual Camera Distance**, **Virtual Camera Horizontal Offset** and **Virtual Camera Vertical Offset** — adjust perspective and viewing position on Cylindrical, Spherical and Custom faceplates. These controls do not affect Flat or LCD Focus. The curved profiles and LCD Focus follow DuckStation's active image viewport, including its offset and size, rather than assuming the image fills the entire output buffer.
+- **Geometry Reconstruction** — Bilinear (1 tap), Adaptive up to 4 taps or Adaptive up to 8 taps. Adaptive reconstruction can also account for LCD Focus's small horizontal scale changes.
 
 ### Scanlines & Beam
 
@@ -106,11 +110,25 @@ The active beam defaults are **Gaussian Beam** scanlines, a **Gaussian** spot ke
 
 To customize a phosphor mask, select Aperture Grille, Slot Mask or Staggered Shadow Mask under **Display Setup → Phosphor Mask Type**. Use **Use Display Profile Default** to retain the selected profile's predefined mask and settings. Only the group corresponding to an explicitly selected mask affects rendering.
 
-**Aperture Grille** — **Mask Strength (Custom)**, **Triad Pitch (pixels at 1080p)**, **Stripe / Aperture Width**, **Inter-Stripe Gap**, **Show Grille Damping Wires** and **Damping Wire Strength**.
+All three custom mask groups share these controls:
 
-**Slot Mask** — **Mask Strength (Custom)**, **Triad Pitch (pixels at 1080p)**, **Slot Width**, **Inter-Slot Gap** and **Slot Height**.
+- **Mask Strength (Custom)**
+- **Triad Pitch (pixels at 1080p)**
 
-**Staggered Shadow Mask** — **Mask Strength (Custom)**, **Triad Pitch (pixels at 1080p)**, **Dot Width** and **Dot Gap**.
+The remaining controls depend on the selected pattern:
+
+1. **Aperture Grille**
+   - **Stripe / Aperture Width**
+   - **Inter-Stripe Gap**
+   - **Show Grille Damping Wires**
+   - **Damping Wire Strength**
+2. **Slot Mask**
+   - **Slot Width**
+   - **Inter-Slot Gap**
+   - **Slot Height**
+3. **Staggered Shadow Mask**
+   - **Dot Width**
+   - **Dot Gap**
 
 ### Experimental
 

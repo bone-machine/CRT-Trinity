@@ -31,9 +31,10 @@
 //
 // Developed with AI-assisted research, implementation and iterative technical review.
 // The defaults are the author's preferred visual settings, selected by eye rather than
-// measured calibration. Flat geometry is the default. Most users should begin with
-// the defaults and make only a few high-level changes. See README.md for usage guidance
-// and AGENTS.md for the technical architecture.
+// measured calibration. Flat geometry is the default LCD reference; LCD Focus is an optional
+// art-directed horizontal remapping, while the CRT faceplate profiles remain available.
+// Most users should begin with the defaults and make only a few high-level changes.
+// See README.md for usage guidance and AGENTS.md for the technical architecture.
 // -----------------------------------------------------------------------------
 
 /*
@@ -258,15 +259,25 @@ uniform float source_smooth_v <
 > = 0.10;
 
 // OPTIONAL SCREEN GEOMETRY ------------------------------------------------------
-// Flat is intentionally the default; curvature is an optional display effect, not a requirement
-// for the intended look. Curved profiles project the completed CRT image as one faceplate.
+// Flat is the clean LCD reference and the saved default. LCD Focus is a separate, non-physical
+// horizontal composition warp. Cylindrical, Spherical and Custom remain virtual faceplate models.
 uniform int screen_geometry <
     ui_type = "combo";
-    ui_items = "Flat\0Cylindrical\0Spherical\0Aspherical\0";
-    ui_label = "CRT Surface Profile";
+    ui_items = "Flat\0Cylindrical\0Spherical\0Custom\0LCD Focus\0";
+    ui_label = "Screen Geometry Profile";
     ui_category = "Screen Geometry";
-    ui_tooltip = "Flat bypasses projection. Cylindrical curves horizontally; Spherical uses a true spherical cap; Aspherical uses independent horizontal/vertical radii plus edge departure. Shared by all display color profiles.";
+    ui_tooltip = "Flat preserves the original image geometry. LCD Focus applies a mild viewport-local horizontal center emphasis without curvature, perspective or rounded corners. Cylindrical curves horizontally; Spherical curves equally on both axes; Custom uses independent horizontal and vertical curvature controls.";
 > = 0;
+
+uniform float lcd_focus_strength <
+    ui_type = "drag";
+    ui_min = 0.0;
+    ui_max = 0.05;
+    ui_step = 0.001;
+    ui_label = "LCD Focus Strength";
+    ui_category = "Screen Geometry";
+    ui_tooltip = "Only used by LCD Focus. Controls a smooth horizontal center expansion with fixed image boundaries. 0.02 gives 2% center magnification; 0.05 is the 5% maximum. This is an art-directed 2D remapping, not CRT curvature.";
+> = 0.02;
 
 uniform float surface_radius <
     ui_type = "drag";
@@ -275,41 +286,34 @@ uniform float surface_radius <
     ui_step = 0.1;
     ui_label = "Surface Radius";
     ui_category = "Screen Geometry";
-    ui_tooltip = "Radius in screen half-widths. Used by Cylindrical and Spherical profiles. Smaller values produce stronger curvature.";
+    ui_tooltip = "Actual radius in screen half-widths. Used by Cylindrical and Spherical; Custom uses the two separate curvature controls below. Smaller values produce stronger curvature. The 2–40 range keeps this literal-radius control useful.";
 > = 8.0;
 
-uniform float surface_radius_horizontal <
-    hidden = true;
-    ui_type = "drag";
-    ui_min = 2.0;
-    ui_max = 40.0;
-    ui_step = 0.1;
-    ui_label = "Aspherical Horizontal Radius";
+uniform float custom_curvature_horizontal <
+    ui_type = "slider";
+    ui_min = 0.0;
+    ui_max = 100.0;
+    ui_step = 0.01;
+    ui_label = "Custom Horizontal Curvature";
     ui_category = "Screen Geometry";
-    ui_tooltip = "Horizontal radius used only by the Aspherical profile. Smaller values produce stronger horizontal curvature.";
-> = 6.0;
+    ui_tooltip = "Nonlinear horizontal curvature level for Custom, not a radius value. 0 is flat; 8.97 is approximately a 248.5 screen-half-width radius; 20 gives radius 50; 50 gives radius 8; 100 gives radius 2. Larger values produce stronger curvature.";
+> = 8.97;
 
-uniform float surface_radius_vertical <
-    hidden = true;
-    ui_type = "drag";
-    ui_min = 2.0;
-    ui_max = 40.0;
-    ui_step = 0.1;
-    ui_label = "Aspherical Vertical Radius";
+uniform float custom_curvature_vertical <
+    ui_type = "slider";
+    ui_min = 0.0;
+    ui_max = 100.0;
+    ui_step = 0.01;
+    ui_label = "Custom Vertical Curvature";
     ui_category = "Screen Geometry";
-    ui_tooltip = "Vertical radius used only by the Aspherical profile. Smaller values produce stronger vertical curvature. Its default differs from the horizontal radius so Aspherical is visibly distinct from Spherical.";
-> = 12.0;
+    ui_tooltip = "Nonlinear vertical curvature level for Custom, not a radius value. 0 is flat; 8.97 is approximately a 248.5 screen-half-width radius; 20 gives radius 50; 50 gives radius 8; 100 gives radius 2. Larger values produce stronger curvature.";
+> = 8.97;
 
-uniform float surface_aspheric_departure <
-    hidden = true;
-    ui_type = "drag";
-    ui_min = -0.12;
-    ui_max = 0.12;
-    ui_step = 0.001;
-    ui_label = "Aspheric Edge Departure";
+uniform int custom_surface_curvature_help <
+    ui_label = " ";
+    ui_text = "Custom-only nonlinear controls: 0 = flat; equal values produce a spherical cap; set Vertical to 0 for a horizontal cylinder or Horizontal to 0 for a vertical cylinder. Equivalent radii are documented in the README.";
     ui_category = "Screen Geometry";
-    ui_tooltip = "Adds or subtracts higher-order depth at the faceplate perimeter. 0 keeps the toric base surface; positive values increase edge recession and negative values flatten it. Used only by Aspherical.";
-> = 0.015;
+> = 0;
 
 uniform float camera_distance <
     ui_type = "drag";
@@ -328,7 +332,7 @@ uniform float camera_horizontal_offset <
     ui_step = 0.005;
     ui_label = "Virtual Camera Horizontal Offset";
     ui_category = "Screen Geometry";
-    ui_tooltip = "Moves the virtual eye left/right relative to the CRT. Has no effect in Flat mode because a flat plane has no parallax.";
+    ui_tooltip = "Moves the virtual eye left/right relative to the virtual CRT faceplate. Has no effect in Flat or LCD Focus modes.";
 > = 0.0;
 
 uniform float camera_vertical_offset <
@@ -338,7 +342,7 @@ uniform float camera_vertical_offset <
     ui_step = 0.005;
     ui_label = "Virtual Camera Vertical Offset";
     ui_category = "Screen Geometry";
-    ui_tooltip = "Moves the virtual eye up/down relative to the CRT. Has no effect in Flat mode because a flat plane has no parallax.";
+    ui_tooltip = "Moves the virtual eye up/down relative to the virtual CRT faceplate. Has no effect in Flat or LCD Focus modes.";
 > = 0.0;
 
 uniform float screen_corner_radius <
@@ -349,7 +353,7 @@ uniform float screen_corner_radius <
     ui_step = 0.001;
     ui_label = "Screen Corner Radius";
     ui_category = "Screen Geometry";
-    ui_tooltip = "Rounds the projected faceplate boundary. Measured as a fraction of the shorter image dimension. 0 gives square corners; applies to curved profiles.";
+    ui_tooltip = "Rounds the projected virtual-faceplate boundary. Measured as a fraction of the shorter image dimension. 0 gives square corners; applies only to Cylindrical, Spherical and Custom.";
 > = 0.02;
 
 uniform int geometry_antialiasing <
@@ -357,7 +361,7 @@ uniform int geometry_antialiasing <
     ui_items = "Bilinear (1 tap)\0Adaptive up to 4 taps\0Adaptive up to 8 taps\0";
     ui_label = "Geometry Reconstruction";
     ui_category = "Screen Geometry";
-    ui_tooltip = "Derivative-driven anisotropic reconstruction. Tap count grows with the projected source footprint and is capped at 4 or 8; it stays at one bilinear tap when the geometry does not minify the image.";
+    ui_tooltip = "Derivative-driven anisotropic reconstruction for LCD Focus and curved profiles. Tap count grows with the mapped source footprint and is capped at 4 or 8; Flat remains a single bilinear sample.";
 > = 0;
 
 // SCANLINES & BEAM --------------------------------------------------------------
@@ -1007,7 +1011,7 @@ uniform int field_phase_flicker_help <
 
 uniform int debug_view <
     ui_type = "combo";
-    ui_items = "Off\0Accumulated Frame (Linear)\0Current Input (Encoded)\0Trail Only (Linear x4)\0Counter and Toggle Test\0Phosphor Mask Only\0CRT Scene (Display View, No Bloom)\0Bloom Blur (x4)\0Bloom Extract (x4)\0Horizontal Source Reconstruction\0Vertical Source Reconstruction\0Source Detail Confidence\0Source Ghost Blur (x4)\0Scanline / Beam Factor\0Halation Bright Pass (x4)\0Halation Horizontal Blur (x4)\0Halation Blur (x4)\0Vignette Falloff\0CRT Surface Coverage\0Phosphor Mask + Damping Wires\0CRT Scene (Linear, Pre-Glow)\0";
+    ui_items = "Off\0Accumulated Frame (Linear)\0Current Input (Encoded)\0Trail Only (Linear x4)\0Counter and Toggle Test\0Phosphor Mask Only\0CRT Scene (Display View, No Bloom)\0Bloom Blur (x4)\0Bloom Extract (x4)\0Horizontal Source Reconstruction\0Vertical Source Reconstruction\0Source Detail Confidence\0Source Ghost Blur (x4)\0Scanline / Beam Factor\0Halation Bright Pass (x4)\0Halation Horizontal Blur (x4)\0Halation Blur (x4)\0Vignette Falloff\0Geometry Coverage\0Phosphor Mask + Damping Wires\0CRT Scene (Linear, Pre-Glow)\0";
     ui_label = "Debug View";
     ui_category = "Diagnostics";
     ui_tooltip = "Inspect source reconstruction, detail confidence, temporal history, ghosting, beam attenuation, phosphor masks, geometry, vignette, halation and bloom. Intermediate linear-light views are tone-mapped or amplified where needed for visibility. See AGENTS.md §14.13 for the full view list.";
@@ -3451,10 +3455,21 @@ float4 PS_BloomBlurVertical(float4 pos : SV_Position, float2 uv : TEXCOORD0) : S
     return sum;
 }
 
-// 3D CRT FACEPLATE PROJECTION ----------------------------------------------------
+// SCREEN GEOMETRY AND 3D CRT FACEPLATE PROJECTION -------------------------------
 // Coordinates are measured in screen half-widths. The vertical coordinate is converted
-// through the actual output aspect ratio so a spherical profile remains physically circular.
+// through the active viewport aspect ratio so a spherical profile remains physically circular.
 // The surface is a depth field z = sag(x,y), with its centre tangent plane at z=0.
+
+// Minimum spherical radius for a ray from camera depth d to intersect the near side of a
+// convex faceplate for every target-plane point within lateral distance sqrt(s2). The 1%
+// margin keeps the extreme corner rays away from the tangent/discriminant-zero condition.
+float minimum_surface_radius(float lateral_distance_squared, float camera_depth)
+{
+    float d = max(camera_depth, 0.25);
+    float s2 = max(lateral_distance_squared, 0.0);
+    float radius = (s2 + sqrt(s2 * s2 + d * d * s2)) / d;
+    return max(1.25, radius * 1.01);
+}
 
 float crt_surface_sag_gradient(float2 p, float aspect, out float2 gradient)
 {
@@ -3462,12 +3477,19 @@ float crt_surface_sag_gradient(float2 p, float aspect, out float2 gradient)
     float y = p.y;
     gradient = float2(0.0, 0.0);
 
-    if (screen_geometry == 0)
+    if (screen_geometry == 0 || screen_geometry == 4)
         return 0.0;
+
+    float camera_depth = max(camera_distance, 0.25);
+    float maximum_x_reach = 1.0 + abs(camera_horizontal_offset);
+    float maximum_y_reach = 1.0 / max(aspect, 0.0001) + abs(camera_vertical_offset);
 
     if (screen_geometry == 1)
     {
-        float radius = max(surface_radius, 1.25);
+        // Circular cylinder section in X; Y is translationally invariant.
+        float minimum_radius = minimum_surface_radius(
+            maximum_x_reach * maximum_x_reach, camera_depth);
+        float radius = max(surface_radius, minimum_radius);
         float root = sqrt(max(radius * radius - x * x, 0.0001));
         gradient.x = x / root;
         return radius - root;
@@ -3475,41 +3497,129 @@ float crt_surface_sag_gradient(float2 p, float aspect, out float2 gradient)
 
     if (screen_geometry == 2)
     {
-        float radius = max(surface_radius, 1.25);
+        // Spherical cap: identical principal curvature on both axes.
+        float lateral_distance_squared = maximum_x_reach * maximum_x_reach
+            + maximum_y_reach * maximum_y_reach;
+        float minimum_radius = minimum_surface_radius(
+            lateral_distance_squared, camera_depth);
+        float radius = max(surface_radius, minimum_radius);
         float r2 = x * x + y * y;
         float root = sqrt(max(radius * radius - r2, 0.0001));
         gradient = float2(x, y) / root;
         return radius - root;
     }
 
-    // Aspherical is a toric faceplate: independent horizontal and vertical base radii,
-    // plus a normalized fourth-order departure that reaches the selected value at corners.
-    float radius_x = max(surface_radius_horizontal, 1.25);
-    float radius_y = max(surface_radius_vertical, 1.25);
-    float root_x = sqrt(max(radius_x * radius_x - x * x, 0.0001));
-    float root_y = sqrt(max(radius_y * radius_y - y * y, 0.0001));
-    float sag_x = radius_x - root_x;
-    float sag_y = radius_y - root_y;
-    gradient = float2(x / root_x, y / root_y);
+    // Custom is a standard k=0 biconic faceplate. Its horizontal and vertical centre
+    // sections are circular arcs with independent principal curvatures. Equal nonzero
+    // curvatures reduce exactly to a sphere; zero vertical curvature gives a horizontal
+    // cylinder, and zero horizontal curvature gives a vertical cylinder.
+    //
+    // Curvature (rather than raw radius) is exposed because sag is approximately linear in
+    // 1/R for shallow surfaces. A linear 2..300 radius slider crowded almost all visible
+    // change into its last few values. The quadratic level mapping is a useful monotonic
+    // control response, not a claim of perceptually linear adjustment:
+    // k = 0.5 * (level / 100)^2; R = 1/k. 0 = flat, 8.97 -> R~248.5, 20 -> 50,
+    // 50 -> 8, and 100 -> 2 (radii in screen half-widths).
+    float level_x = saturate(custom_curvature_horizontal * 0.01);
+    float level_y = saturate(custom_curvature_vertical * 0.01);
+    float requested_curvature_x = 0.5 * level_x * level_x;
+    float requested_curvature_y = 0.5 * level_y * level_y;
+    float curvature_x = requested_curvature_x;
+    float curvature_y = requested_curvature_y;
 
-    float normalized_r2 = x * x + (y * aspect) * (y * aspect);
-    float edge_shape = 0.25 * normalized_r2 * normalized_r2;
-    float departure = surface_aspheric_departure;
-    gradient += departure * float2(
-        normalized_r2 * x,
-        normalized_r2 * y * aspect * aspect);
-    return sag_x + sag_y + departure * edge_shape;
+    // Bound the anisotropic biconic with a sphere in curvature-scaled lateral coordinates.
+    // Let kMax=max(kx,ky), wx=kx/kMax and wy=ky/kMax. With X=sqrt(wx)*x and
+    // Y=sqrt(wy)*y, the biconic radicand is no smaller than the enclosing sphere's
+    // radicand, while its numerator is exactly kMax*(X^2+Y^2). Thus the sphere's
+    // tangent-ray bound is conservative and varies continuously as either axis flattens.
+    // At ky=0 it reduces exactly to the horizontal-cylinder X/Z bound; at kx=0 it
+    // reduces to the vertical-cylinder Y/Z bound. Scaling both curvatures together
+    // preserves their requested ratio when a mixed-axis setting reaches the safety limit.
+    float requested_maximum = max(curvature_x, curvature_y);
+    if (requested_maximum > 0.0)
+    {
+        float weight_x = curvature_x / requested_maximum;
+        float weight_y = curvature_y / requested_maximum;
+        float effective_lateral_distance_squared =
+            weight_x * maximum_x_reach * maximum_x_reach
+            + weight_y * maximum_y_reach * maximum_y_reach;
+        float minimum_radius = minimum_surface_radius(
+            effective_lateral_distance_squared, camera_depth);
+        float maximum_curvature = 1.0 / minimum_radius;
+        if (requested_maximum > maximum_curvature)
+        {
+            float scale = maximum_curvature / requested_maximum;
+            curvature_x *= scale;
+            curvature_y *= scale;
+        }
+    }
+    float curvature_x2 = curvature_x * curvature_x;
+    float curvature_y2 = curvature_y * curvature_y;
+    float numerator = curvature_x * x * x + curvature_y * y * y;
+    float q = max(1.0 - curvature_x2 * x * x - curvature_y2 * y * y, 0.0001);
+    float root = sqrt(q);
+    float denominator = 1.0 + root;
+    float denominator2 = denominator * denominator;
+
+    gradient.x = 2.0 * curvature_x * x / denominator
+        + numerator * curvature_x2 * x / (root * denominator2);
+    gradient.y = 2.0 * curvature_y * y / denominator
+        + numerator * curvature_y2 * y / (root * denominator2);
+    return numerator / denominator;
 }
 
-float2 project_crt_surface(float2 output_uv, float2 screen_size)
+// Invert the LCD Focus forward map with four Newton steps. The forward map is
+// x_out = x_source + a*x_source*(1-x_source^2)^2. Its derivative stays positive
+// throughout x in [-1,1] for the exposed 0..0.05 strength range, so the inverse is
+// unique. Both endpoints and their first derivatives match the identity mapping.
+float lcd_focus_inverse_x(float destination_x)
 {
+    float strength = clamp(lcd_focus_strength, 0.0, 0.05);
+    float source_x = clamp(destination_x, -1.0, 1.0);
+    [unroll]
+    for (int iteration = 0; iteration < 4; ++iteration)
+    {
+        float x2 = source_x * source_x;
+        float one_minus_x2 = 1.0 - x2;
+        float residual = source_x
+            + strength * source_x * one_minus_x2 * one_minus_x2
+            - destination_x;
+        float derivative = 1.0
+            + strength * one_minus_x2 * (1.0 - 5.0 * x2);
+        source_x = clamp(source_x - residual / max(derivative, 0.5), -1.0, 1.0);
+    }
+    return source_x;
+}
+
+float2 project_crt_surface(float2 output_uv, float2 screen_size,
+                           float2 viewport_offset, float2 viewport_size,
+                           out float2 surface_uv)
+{
+    float2 safe_viewport_size = max(viewport_size, float2(1.0, 1.0));
+    surface_uv = (output_uv * screen_size - viewport_offset) / safe_viewport_size;
+
     if (screen_geometry == 0)
         return output_uv;
 
-    float aspect = screen_size.x / max(screen_size.y, 1.0);
+    // The geometry domain belongs to DuckStation's active image viewport, not necessarily
+    // the full swapchain. Pixels outside it are left unprojected and fade through edge coverage.
+    if (surface_uv.x < 0.0 || surface_uv.x > 1.0
+        || surface_uv.y < 0.0 || surface_uv.y > 1.0)
+        return output_uv;
+
+    if (screen_geometry == 4)
+    {
+        // LCD Focus expands the central composition horizontally while keeping the image
+        // centre and both viewport edges fixed. Only the source x-coordinate is remapped.
+        float destination_x = surface_uv.x * 2.0 - 1.0;
+        surface_uv.x = 0.5 + 0.5 * lcd_focus_inverse_x(destination_x);
+        return (viewport_offset + surface_uv * safe_viewport_size) / screen_size;
+    }
+
+    float aspect = safe_viewport_size.x / safe_viewport_size.y;
     float2 plane_xy = float2(
-        output_uv.x * 2.0 - 1.0,
-        (1.0 - output_uv.y * 2.0) / aspect);
+        surface_uv.x * 2.0 - 1.0,
+        (1.0 - surface_uv.y * 2.0) / aspect);
 
     float camera_distance_value = max(camera_distance, 0.25);
     float3 camera = float3(camera_horizontal_offset, camera_vertical_offset, -camera_distance_value);
@@ -3532,9 +3642,10 @@ float2 project_crt_surface(float2 output_uv, float2 screen_size)
     }
 
     float3 hit = camera + ray * t;
-    return float2(
+    surface_uv = float2(
         0.5 + 0.5 * hit.x,
         0.5 - 0.5 * hit.y * aspect);
+    return (viewport_offset + surface_uv * safe_viewport_size) / screen_size;
 }
 
 float crt_surface_coverage(float2 surface_uv, float2 texture_size)
@@ -3544,13 +3655,16 @@ float crt_surface_coverage(float2 surface_uv, float2 texture_size)
 
     float aspect = texture_size.x / max(texture_size.y, 1.0);
     // Express both axes in units of the shorter image dimension. The half-extents therefore
-    // retain the true output aspect ratio, while radius keeps its documented shorter-side basis.
+    // retain the active viewport aspect ratio, while radius keeps its documented shorter-side basis.
     float2 half_extent = float2(max(aspect, 1.0), max(1.0 / max(aspect, 0.0001), 1.0));
     float2 p = float2(
         (surface_uv.x * 2.0 - 1.0) * half_extent.x,
         (1.0 - surface_uv.y * 2.0) * half_extent.y);
-    float radius = min(saturate(screen_corner_radius) * 2.0,
-                       min(half_extent.x, half_extent.y));
+    // LCD Focus keeps square viewport edges; corner rounding belongs only to the
+    // virtual CRT faceplate profiles. Radius zero makes this signed distance a rectangle.
+    float radius = (screen_geometry == 4) ? 0.0
+        : min(saturate(screen_corner_radius) * 2.0,
+              min(half_extent.x, half_extent.y));
     float2 q = abs(p) - (half_extent - radius);
     float distance = length(max(q, float2(0.0, 0.0)))
         + min(max(q.x, q.y), 0.0) - radius;
@@ -3559,12 +3673,13 @@ float crt_surface_coverage(float2 surface_uv, float2 texture_size)
 }
 
 float3 sample_crt_surface(sampler source_sampler, float2 centre_uv,
-                          float2 texture_size, out float coverage,
-                          out float scanline_factor)
+                          float2 screen_size, float2 viewport_offset,
+                          float2 viewport_size, float2 centre_surface_uv,
+                          out float coverage, out float scanline_factor)
 {
     if (screen_geometry == 0 || geometry_antialiasing == 0)
     {
-        coverage = crt_surface_coverage(centre_uv, texture_size);
+        coverage = crt_surface_coverage(centre_surface_uv, viewport_size);
         float4 sample_value = tex2D(source_sampler, saturate(centre_uv));
         scanline_factor = saturate(sample_value.a);
         return sample_value.rgb;
@@ -3572,8 +3687,8 @@ float3 sample_crt_surface(sampler source_sampler, float2 centre_uv,
 
     // Build the 2x2 Jacobian in source texels per output pixel. Its largest eigenvector
     // identifies the principal minification direction, including rotated/off-axis cases.
-    float2 dx = ddx(centre_uv) * texture_size;
-    float2 dy = ddy(centre_uv) * texture_size;
+    float2 dx = ddx(centre_uv) * screen_size;
+    float2 dy = ddy(centre_uv) * screen_size;
     float a = dot(dx, dx);
     float b = dot(dx, dy);
     float c = dot(dy, dy);
@@ -3604,7 +3719,9 @@ float3 sample_crt_surface(sampler source_sampler, float2 centre_uv,
         {
             float offset = ((float)tap_index + 0.5) * inverse_taps - 0.5;
             float2 tap_uv = centre_uv + major_uv * offset;
-            float tap_coverage = crt_surface_coverage(tap_uv, texture_size);
+            float2 tap_surface_uv = (tap_uv * screen_size - viewport_offset)
+                / max(viewport_size, float2(1.0, 1.0));
+            float tap_coverage = crt_surface_coverage(tap_surface_uv, viewport_size);
             if (tap_coverage > 0.00001)
             {
                 float4 tap_sample = tex2D(source_sampler, saturate(tap_uv));
@@ -3704,18 +3821,23 @@ float4 PS_CompositeBloom(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
     if (debug_view == 16)
         return float4(saturate(tex2D(GaussianBlurSampler, uv_tx).r * 4.0).xxx, 1.0);
 
-    float2 geometry_uv = project_crt_surface(uv_tx, screen_size);
+    float2 viewport_offset = source_viewport_offset_px();
+    float2 viewport_size = source_viewport_size_px();
+    float2 geometry_surface_uv;
+    float2 geometry_uv = project_crt_surface(
+        uv_tx, screen_size, viewport_offset, viewport_size, geometry_surface_uv);
     if (debug_view == 18)
     {
-        float coverage = crt_surface_coverage(geometry_uv, screen_size);
+        float coverage = crt_surface_coverage(geometry_surface_uv, viewport_size);
         return float4(coverage.xxx, 1.0);
     }
     float geometry_mask;
     float scanline_factor;
     float3 col = sample_crt_surface(
-        sCrtScene, geometry_uv, screen_size, geometry_mask, scanline_factor);
+        sCrtScene, geometry_uv, screen_size, viewport_offset, viewport_size,
+        geometry_surface_uv, geometry_mask, scanline_factor);
 
-    // Add the post-phosphor optical glow in faceplate coordinates. In default mode A it is not
+    // Add the post-phosphor optical glow in geometry-mapped image coordinates. In default mode A it is not
     // cut by scanlines; mode B reapplies the local scanline factor stored in scene alpha.
     col += halation_contribution(geometry_uv, scanline_factor);
 
@@ -3839,7 +3961,7 @@ float4 PS_CompositeBloom(float4 pos : SV_Position, float2 uv_tx : TEXCOORD0) : S
         * (sin(50.0 * time + screen_uv.y * 2.0) * 0.5 + 0.5);
 
 
-    // Apply antialiased faceplate coverage after all image/grain/flicker layers.
+    // Apply antialiased geometry-boundary coverage after all image/grain/flicker layers.
     col *= geometry_mask;
 
     // SDR output clamp: this intentionally clips values outside [0,1], so this is not HDR-safe.

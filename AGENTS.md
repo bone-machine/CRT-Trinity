@@ -37,7 +37,7 @@ The **current default preset** is deliberately mild and approachable rather than
 - animated grain/noise;
 - small frame-dependent flicker and optional signal wobble.
 
-**Flat geometry is the default.** Curvature exists as an optional display/presentation effect, not as a requirement for the intended appearance and not as a correction to the game's geometry.
+**Flat geometry is the default LCD reference.** LCD Focus is a separate, restrained horizontal composition remap; Cylindrical, Spherical and Custom remain optional virtual CRT faceplate projections. None of these transforms corrects game-world geometry or restores information missing from the rendered image.
 
 ### 1.2 Sony Trinitron design reference and project-wide design philosophy
 
@@ -62,7 +62,7 @@ The other entries in **Display Color Profile** are optional user-customization c
 
 The shader was developed with **AI-assisted research, implementation, mathematical analysis and iterative technical review** under the project direction of `bone-machine`. The saved defaults are the author’s preferred visual settings, selected by eye rather than by instrumented calibration. They are not measurements or factory calibrations of a particular television.
 
-The out-of-box configuration is a **mild, flat Sony Trinitron-inspired treatment**. Its default character is a **cool, blue-ish Japanese P22-inspired look**, with Flat geometry and the profile-selected aperture-grille mask. Other selectable profiles provide color and mask-pairing alternatives, not independent complete CRT models. For ordinary use, the author recommends starting with the defaults and changing only familiar high-level settings such as the display profile, scanline visibility/strength, smoothing, grain, bloom or halation. Detailed beam, mask, reconstruction and geometry controls are intended for users who understand their interactions; advanced users may change them freely.
+The out-of-box configuration is a **mild Sony Trinitron-inspired image treatment presented on flat LCD geometry**. Its default character is a **cool, blue-ish Japanese P22-inspired look**, with Flat geometry and the profile-selected aperture-grille mask. LCD Focus is an optional art-directed horizontal remap; Cylindrical, Spherical and Custom remain available as separate virtual faceplate looks. Other selectable profiles provide color and mask-pairing alternatives, not independent complete CRT models. For ordinary use, the author recommends starting with the defaults and changing only familiar high-level settings such as the display profile, scanline visibility/strength, smoothing, grain, bloom or halation. Detailed beam, mask, reconstruction and geometry controls are intended for users who understand their interactions; advanced users may change them freely.
 
 This describes the current design target and preset, not a requirement that future work must never change. The shader is editable, and a user may request a different visual target or a more detailed signal/display model. Follow the requested direction while clearly distinguishing a Trinitron-inspired post-process from a physically complete hardware simulation.
 
@@ -100,7 +100,7 @@ This is the technical handoff for the current CRT-Trinity implementation. The ac
 7. **Respect beam-model and attenuation defaults.** Shared Beam is the default Vertical Beam Model. Per-source-line RGB Attenuation defaults to Source-Domain; Post-Display (Shared Beam-aligned) is optional. The latter is meaningful only for Per-source-line RGB. Field-Phase Flicker forces Per-source-line RGB and Post-Display while active.
 8. **Preserve Field-Phase Flicker's exact override.** It is off by default and temporarily overrides all 12 adjustable Scanlines & Beam controls. It forces Per-source-line RGB, Post-Display attenuation, Rolling Scanlines off and Alternating Field Phase on; it pins Scanline Strength to `1.7` and the remaining adjustable values to their saved section defaults. User selections are not overwritten and resume when the toggle is disabled. Keep the persistent UI legend short and blunt; put the technical explanation in the tooltip and this file.
 9. **Understand its phase behaviour accurately.** `FCount` parity switches the phase between 0 and π on successive rendered frames. In the Per-source-line RGB path that becomes a half-cycle shift in beam coordinates, redistributing neighbouring source-line weights. The whole procedural pattern changes phase globally; this is not a physical beam sweeping down the screen or true 480i reconstruction.
-10. **Keep current visual defaults synchronized.** Vignette Strength is `0.5`, Vignette Mapping is Symmetric Viewport, and the hidden `headroom_aware_grain` feature is enabled by default (`true`). Update §3 and §14 whenever a default changes.
+10. **Keep current visual defaults synchronized.** Screen Geometry Profile defaults to Flat (`0`); LCD Focus Strength defaults to `0.02` and is used only when LCD Focus is selected. Cylindrical, Spherical and Custom retain their numeric profile IDs (`1`, `2`, `3`), and Surface Radius remains `8.0`. Vignette Strength is `0.5`, Vignette Mapping is Symmetric Viewport, and the hidden `headroom_aware_grain` feature is enabled by default (`true`). Update §3 and §14 whenever a default changes.
 11. **Keep diagnostic views synchronized.** `Debug View` currently has 21 entries, indexed 0–20. Maintain the UI list, pixel-shader branches, composite-stage branches, README list and §14.13 as one contract. Diagnostic paths may deliberately override normal effect early-outs to expose intermediate buffers.
 12. **Track color domains carefully.** The accumulation stage decodes the source with the BT.1886-style EOTF approximation and stores intermediate values in RGBA16F. Identify whether each value is encoded, linear, tone-mapped or output-referred before adding transfer functions or moving calculations.
 13. **Respect alpha-channel contracts.** `tSmoothH.a` and `tSmoothV.a` carry detail confidence; `tCrtScene.a` carries scanline metadata, not opacity. Update every consumer if these contracts change.
@@ -134,11 +134,11 @@ The following table records the current saved defaults and fixed rendering choic
 | Source Image Filtering | Adjacent-Tap Edge Blending (hidden) | Off (`false`) | Cached adjacent-tap implementation retained for Edge-Aware/Hybrid; hidden after the user reported no useful visible effect from the toggle. |
 | Source Image Filtering | Horizontal Source-Pixel Smoothing | `0.17` | Added horizontal Gaussian width in native-pixel units. |
 | Source Image Filtering | Vertical Source-Pixel Smoothing | `0.10` | Added vertical Gaussian width in native-line units. |
-| Screen Geometry | CRT Surface Profile | Flat (`0`) | Bypasses faceplate projection. |
+| Screen Geometry | Screen Geometry Profile | Flat (`0`) | Clean LCD geometry reference; LCD Focus and the three virtual faceplate profiles remain optional. |
 | Screen Geometry | Geometry Reconstruction | Bilinear (1 tap, `0`) | No adaptive multi-tap geometry filtering by default. |
-| Screen Geometry | Surface Radius | `8.0` | Default cylindrical/spherical radius. |
-| Screen Geometry | Aspherical Horizontal / Vertical Radius (hidden) | `6.0 / 12.0` | Fixed internal radii for the optional Aspherical profile; retained and hidden from the UI. |
-| Screen Geometry | Aspheric Edge Departure (hidden) | `0.015` | Fixed internal higher-order edge-depth departure; retained and hidden from the UI. |
+| Screen Geometry | Surface Radius | `8.0` | Actual shared radius for Cylindrical and Spherical profiles; UI range `2.0–40.0` screen half-widths. |
+| Screen Geometry | Custom Horizontal Curvature | `8.97` | Nonlinear horizontal curvature level for Custom; equivalent radius is approximately `248.5` screen half-widths. |
+| Screen Geometry | Custom Vertical Curvature | `8.97` | Nonlinear vertical curvature level for Custom; equal to the horizontal default for the near-flat FD Trinitron approximation. |
 | Screen Geometry | Virtual Camera Distance | `4.0` | Default camera distance for curved profiles. |
 | Screen Geometry | Virtual Camera Horizontal / Vertical Offset | `0.0 / 0.0` | Centred virtual camera. |
 | Screen Geometry | Screen Corner Radius (hidden) | `0.02` | Fixed internal rounded-faceplate corner fraction; retained and hidden from the UI. |
@@ -208,7 +208,7 @@ The technique is an ordered 13-pass pipeline. The order is intentional because s
 10. `Pass_ExtractBloom` — 4×4 downsample of separately thresholded post-phosphor highlights plus the direct halation contribution.
 11. `Pass_BloomBlurHorizontal` — quarter-resolution horizontal bloom blur.
 12. `Pass_BloomBlurVertical` — quarter-resolution vertical bloom blur.
-13. `Pass_CompositeBloom` — optional faceplate projection, direct halation, bloom, tone mapping, selective warm-color desaturation, animated grain/flicker, faceplate coverage and final SDR clamp.
+13. `Pass_CompositeBloom` — optional geometry remapping, direct halation, bloom, tone mapping, selective warm-color desaturation, animated grain/flicker, geometry coverage and final SDR clamp.
 
 The final composite pass has no explicit `RenderTarget`; it writes to the technique output. ReShade FX schedules all declared passes in the technique. A uniform such as `bloom_intensity` can bypass the shader work inside a pass, but it cannot remove a pass from the host schedule.
 
@@ -798,7 +798,7 @@ where `f = flicker_amount`, `t` is the elapsed-time-derived clock wrapped for th
 
 ## 11. Grain and noise system
 
-The grain is a deterministic hash-noise process with spatial scale, RGB correlation, temporal interpolation, grid alignment, luminance adaptation, image-aware chroma and source-detail protection. It is added after tone mapping and selective warm desaturation, before the final flicker and faceplate coverage.
+The grain is a deterministic hash-noise process with spatial scale, RGB correlation, temporal interpolation, grid alignment, luminance adaptation, image-aware chroma and source-detail protection. It is added after tone mapping and selective warm desaturation, before the final flicker and geometry coverage.
 
 ### 11.1 Deterministic hash field
 
@@ -848,13 +848,32 @@ The hidden `headroom_aware_grain` uniform is enabled by default (`true`) and act
 
 ### 12.1 Role in the shader
 
-Curvature is optional. The default `CRT Surface Profile` is Flat, so the source image, phosphor mask, beam and glow can be judged without geometric projection. Curved modes project the completed CRT image onto a virtual faceplate; they do not repair game-world geometry or restore information missing from the rendered image.
+Flat is the saved default `Screen Geometry Profile`, providing the clean LCD reference with no post-CRT geometric remapping. `LCD Focus` is a separate, optional art-directed horizontal composition warp; it is not a CRT surface model. Cylindrical, Spherical and Custom remain optional virtual faceplate projections. These transforms affect the completed CRT image; they do not repair game-world geometry or restore information missing from the rendered image.
 
 ### 12.2 Surface profiles and equations
 
-Coordinates use screen half-width units. Vertical coordinates are corrected by output aspect ratio so spherical profiles behave as circular caps in screen space.
+The virtual faceplate profiles use screen half-width units relative to DuckStation's active image viewport (`ViewportOffset` / `ViewportSize`), falling back to the full output buffer when those dimensions are unavailable. The viewport aspect ratio, rather than the swapchain aspect ratio, defines the virtual faceplate. Projected local faceplate UVs are mapped back into full output-texture UVs for scene, halation and bloom sampling. Pixels outside the active viewport bypass projection and fade to zero geometry coverage across the antialiased viewport boundary. `Flat` is the saved default (`screen_geometry = 0`). `LCD Focus` (`4`) is a non-physical, one-dimensional horizontal composition remap with fixed viewport endpoints; it does not use camera perspective, faceplate sag or rounded corners. The saved LCD Focus Strength is `0.02`, used only when that profile is selected. Cylindrical (`1`), Spherical (`2`) and Custom (`3`) retain their previous numeric IDs for preset compatibility. A previously saved preset that explicitly stores `screen_geometry = 1` will therefore continue to select Cylindrical; the new Flat default applies when no saved value overrides it. The shared `surface_radius` remains `8.0`. The Custom profile exposes independent horizontal and vertical curvature levels. Their equal defaults (`8.97` / `8.97`) correspond to equivalent radii of approximately `248.5` screen half-widths, yielding an extremely shallow spherical-cap approximation inspired by the Sony FD Trinitron GDM-F500.
 
-**Flat (`0`)** returns the original UV, full faceplate coverage and a single sample. The geometry reconstruction selector does not affect the Flat path.
+**Flat (`0`)** returns the original UV, full coverage and a single sample. The geometry reconstruction selector does not affect the Flat path.
+
+**LCD Focus (`4`)** is a non-physical, viewport-local horizontal remapping intended as an optional LCD art-direction tool rather than CRT geometry. It expands the centre of the game picture slightly and redistributes the compensating compression toward the outer-middle image while leaving vertical coordinates, the image centre, and both horizontal endpoints fixed. It applies after the CRT image, halation and bloom have been composed, so it also remaps HUD elements and every other pixel in the viewport; the shader has no semantic separation of gameplay and interface content. It does not stretch 4:3 to 16:9, add camera perspective, curve the image vertically, or round its corners.
+
+The forward mapping from normalized source coordinate `x` to destination coordinate `x_out` is:
+
+\[
+x_{out}=x+a x(1-x^2)^2,\qquad -1\le x\le1
+\]
+
+where `a = clamp(lcd_focus_strength, 0, 0.05)` and the saved value is `0.02`. The shader samples destination pixels by inverting this mapping. It starts at `x_out` and performs four Newton steps on:
+
+\[
+f(x)=x+a x(1-x^2)^2-x_{out},\qquad
+f'(x)=1+a(1-x^2)(1-5x^2)
+\]
+
+For the exposed strength range, `(1-x^2)(1-5x^2)` lies between `-0.8` and `1`, so `f'(x)` remains between `0.96` and `1.05`. The mapping is therefore strictly monotonic and has one inverse throughout the viewport. Both endpoints remain fixed (`f(±1)=±1`), and the derivative equals one at each endpoint, matching the unmodified mapping at the viewport boundary without a first-derivative discontinuity. At the default `a=0.02`, centre magnification is 2%; at the maximum it is 5%. The maximum coordinate displacement is `a * 16/(25*sqrt(5))`, or about `0.29%` of full viewport width at the default and `0.72%` at maximum. The result is intentionally subtle.
+
+LCD Focus uses square viewport coverage and ignores `screen_corner_radius`. Adaptive geometry reconstruction can account for its small spatially varying horizontal source footprint; Bilinear remains the default and may be sufficient for these small scale changes.
 
 **Cylindrical (`1`)** curves horizontally:
 
@@ -862,28 +881,45 @@ Coordinates use screen half-width units. Vertical coordinates are corrected by o
 sag(x)=R-\sqrt{R^2-x^2},\qquad \frac{dsag}{dx}=\frac{x}{\sqrt{R^2-x^2}}
 \]
 
-**Spherical (`2`)** curves in both axes:
+**Spherical (`2`)** curves equally in both axes:
 
 \[
 sag(x,y)=R-\sqrt{R^2-x^2-y^2},\qquad
 \nabla sag=\frac{(x,y)}{\sqrt{R^2-x^2-y^2}}
 \]
 
-**Aspherical (`3`)** uses independent toric radii plus a normalized fourth-order departure:
+**Custom (`3`)** is a general-purpose **biconic faceplate** with independent horizontal and vertical principal curvatures. Its visible controls are nonlinear curvature levels (`custom_curvature_horizontal` and `custom_curvature_vertical`), not radii. For each axis:
 
 \[
-sag_{base}=R_x-\sqrt{R_x^2-x^2}+R_y-\sqrt{R_y^2-y^2}
-\]
-\[
-r_n^2=x^2+(y\cdot aspect)^2,\qquad
-sag_{departure}=\frac{departure}{4}(r_n^2)^2
+\ell=\operatorname{saturate}(L/100),\qquad c=0.5\ell^2
 \]
 
-The analytic gradient includes the derivative of the departure term. The radii are clamped internally to avoid a zero square-root denominator. Smaller radii produce stronger curvature; positive/negative departure alters edge depth relative to the toric base.
+where `L` is the UI level from 0 to 100 and `c=1/R` is the requested principal curvature. Thus `L=0` is exactly flat on that axis, `L=8.97` corresponds to approximately `R=248.5`, `L=20` to `R=50`, `L=50` to `R=8`, and `L=100` to `R=2` (all radii in screen half-width units). The quadratic mapping is continuous and monotonic, with finer curvature changes near zero and stronger changes toward the upper end. It is not claimed to be perceptually linear or optimal; it replaces the poor response of a raw radius slider spanning 2–300. The default levels are both `8.97`, giving an extremely shallow, equal-curvature surface inspired by the Sony FD Trinitron GDM-F500 reference.
+
+Define:
+
+\[
+c_x=0.5\operatorname{saturate}(L_x/100)^2,\qquad
+c_y=0.5\operatorname{saturate}(L_y/100)^2
+\]
+\[
+A=c_xx^2+c_yy^2,\qquad q=1-c_x^2x^2-c_y^2y^2,\qquad d=1+\sqrt{q}
+\]
+\[
+sag(x,y)=\frac{A}{d}
+\]
+\[
+\frac{\partial sag}{\partial x}=\frac{2c_xx}{d}+\frac{A c_x^2x}{\sqrt{q}d^2},\qquad
+\frac{\partial sag}{\partial y}=\frac{2c_yy}{d}+\frac{A c_y^2y}{\sqrt{q}d^2}
+\]
+
+The denominator radicand `q` has a small positive numerical floor, but that floor is only a floating-point guard; it is not a substitute for keeping the requested surface inside its valid domain. The safety clamp uses a curvature-scaled enclosing sphere, which handles mixed and one-axis cases continuously. Let `kMax = max(cx, cy)`, `wx = cx/kMax` and `wy = cy/kMax`. In transformed lateral coordinates `X = sqrt(wx) * x` and `Y = sqrt(wy) * y`, the biconic radicand is no smaller than the corresponding sphere's radicand, while its numerator is exactly `kMax * (X² + Y²)`. The biconic sag is therefore bounded by a sphere of radius `1/kMax` in those transformed coordinates. The sphere's tangent-ray bound can be applied using the weighted reach `s² = wx * maximum_x_reach² + wy * maximum_y_reach²`. If the requested `kMax` exceeds `1/R_min`, both curvatures are scaled by the same factor, preserving their ratio.
+
+This weighted bound has the desired exact limits without a discontinuous special-case threshold: when `cy = 0`, `wy = 0` and it reduces to the horizontal-cylinder X/Z bound; when `cx = 0`, it reduces to the vertical-cylinder Y/Z bound. As either curvature approaches zero, its contribution to the safety reach also approaches zero smoothly. The shared `Surface Radius` control remains an actual radius and is used only by Cylindrical and Spherical. Along either principal axis, the biconic profile is the exact circular sag for that axis's effective radius. Equal nonzero levels produce the same spherical cap as Spherical; a zero-curvature axis produces the corresponding cylindrical limit. Smaller levels mean weaker curvature; larger levels mean stronger curvature. At extreme aspect ratios, short camera distances or large camera offsets, the common safety scale can still reduce both effective curvatures while preserving their requested ratio.
 
 ### 12.3 Virtual camera and ray/height-field intersection
 
-`project_crt_surface()` converts output UV to a plane point in aspect-corrected screen coordinates. It creates a virtual camera using `Virtual Camera Distance`, horizontal offset and vertical offset, then forms a ray from the camera to the plane point. The surface is represented as `z = sag(x,y)`.
+`project_crt_surface()` converts output UV to coordinates local to the active DuckStation image viewport, then maps those coordinates to an aspect-corrected plane point. It creates a virtual camera using `Virtual Camera Distance`, horizontal offset and vertical offset, then forms a ray from the camera to the plane point. The surface is represented as `z = sag(x,y)`. After intersection, the local faceplate UV is mapped back into full output-texture UVs so the already-rendered CRT scene, halation and bloom are sampled in their original texture space. Output pixels outside the active viewport bypass projection and fade to zero geometry coverage across the narrow antialiasing band.
 
 For ray parameter `t`:
 
@@ -899,25 +935,39 @@ f'(t)=D_z-\nabla sag\cdot D_{xy}
 
 Six Newton iterations update `t = clamp(t - f/f', 0.25, 3.0)` when the derivative is safe. The resulting hit point is converted back to faceplate UV. This is a ray/height-field projection, not a full glass-refraction, raymarching, lensing or physically based optics model.
 
-The Aspherical profile retains fixed internal shape values `surface_radius_horizontal = 6.0`, `surface_radius_vertical = 12.0` and `surface_aspheric_departure = 0.015`. All three uniforms remain active but are hidden from the UI (`hidden = true`); their asymmetric toric base and fourth-order corner departure distinguish this profile from Spherical. They can be exposed or retuned by a future maintainer without changing the projection algorithm. These parameters do nothing unless `CRT Surface Profile` is Aspherical.
+Before evaluating the sag, `minimum_surface_radius(s²,d)` computes a conservative radius that guarantees a near-side intersection for all rays through the viewport, where `d` is camera depth and `s²` is the maximum squared lateral distance from the camera to a viewport point:
+
+\[ R_{min}=1.01\,\frac{s^2+\sqrt{s^4+d^2s^2}}{d} \] (with an implementation floor of `1.25`).
+
+This follows from the tangent-ray/discriminant condition for a sphere; the 1% margin avoids the grazing limit. Cylindrical uses horizontal reach only; Spherical uses both axes. Custom applies the same spherical bound in curvature-scaled lateral coordinates, with weighted squared reach `wx*xReach² + wy*yReach²`, where `wx=cx/max(cx,cy)` and `wy=cy/max(cx,cy)`. This is a conservative bound for the biconic, reduces exactly to the appropriate one-axis cylinder bound when the other curvature is zero, and varies continuously as either axis approaches zero. If required, both Custom curvatures are scaled by the same factor to preserve their ratio. At extreme aspect ratios, short camera distances or large camera offsets, the safety scale can still limit the strongest requested curvature. The bound is based on the viewport rectangle, not the full swapchain when an active viewport is available.
+
+The Custom curvature controls remain independent of `surface_radius`, so changing profiles does not overwrite or repurpose the shared Cylindrical/Spherical radius. Their `0–100` nonlinear mapping is `c = 0.5 * (level / 100)^2`; values `8.97`, `20`, `50` and `100` correspond approximately to radii `248.5`, `50`, `8` and `2` screen half-widths respectively. Both defaults are `8.97`, which makes the biconic reduce exactly to a very shallow spherical cap. The old hidden fourth-order edge-departure term remains removed in favour of the standard biconic blend. The controls are always displayed because the ReShade UI annotations used here do not provide profile-dependent visibility. `ui_type = "slider"` is retained for hosts that support that annotation, but DuckStation may expose scalar controls using its generic option widget rather than a dedicated slider; the shader cannot force a host-side widget implementation. Tooltips and the display-only legend state that the curvature levels affect rendering only when `Screen Geometry Profile` is set to Custom. The Custom uniform names changed from the earlier raw-radius controls so a saved value such as `248.5` cannot be misread as a curvature level; old presets will use the new defaults until the user adjusts and saves the new controls.
+
+#### Historical geometry references and scope
+
+CRT faceplates did not have one universal contour. Engineering references describe spherical and cylindrical faceplates as established commercial forms, and also document non-spherical contours with curvature on both principal axes. An RCA patent filed in 1983 describes such a non-spherical faceplate and emphasizes the need to blend the different axis curvatures through the diagonal/corner regions ([US 4,570,101](https://patents.justia.com/patent/4570101)). A separate RCA patent describes spherical and cylindrical CRT contours and their different axis behaviour ([US 4,631,439](https://patents.justia.com/patent/4631439)). A 1989 technical article on the Sony Trinitron tube describes its faceplate as cylindrical ([*Television*, April 1989, “The Sony Trinitron Tube”](https://worldradiohistory.com/UK/Practical/Television/80s/Television-Servicing-UK-1989-04.pdf)); a contemporary hi-fi magazine describes Sony's Trinitron as having conventional horizontal curvature with a nearly flat vertical profile ([*Hi-Fi Choice*, March 1989](https://www.worldradiohistory.com/UK/Hi-Fi-Choice/1983-1989/Hi-Fi-Choice-068.pdf)).
+
+A useful near-flat reference is Sony's FD Trinitron GDM-F500. Ken Werner's February 1999 *Information Display* evaluation describes the 21-inch monitor (19.8-inch viewable) as practically flat horizontally and vertically, while reporting a deliberate 50 m faceplate radius and a 0.7 mm centre rise to avoid the visual impression of concavity (["Sony's CRT Strategy: Flat But Not Thin", *Information Display*, February 1999](https://archive.informationdisplay.org/Portals/InformationDisplay/IssuePDF/1999February.pdf)). A conservative shader representation is an equal-radius, very shallow spherical cap rather than a visibly curved cylinder. The article reports one 50 m faceplate radius but does not publish separate horizontal and vertical curvature measurements; using equal radii is therefore a simple symmetric approximation, not a claim that the complete glass contour was measured as a perfect sphere. The Custom default curvature level `8.97` maps to an equivalent radius of `248.5` in both axes: assuming a 19.8-inch 4:3 viewable area, its width is 15.84 inches (0.402336 m), so the half-width is 0.201168 m and a 50 m physical radius corresponds to `50 / 0.201168 = 248.55` shader screen-half-width units. The equivalent radius is rounded to `248.5`. This is a geometry normalization for that reference image size, not an absolute physical calibration: the apparent curvature scales with the output viewport on other displays. The reported 0.7 mm is a faceplate deviation, not a universal per-axis sag specification for every viewport.
+
+That history motivates retaining Cylindrical, Spherical and Custom as distinct virtual faceplate choices, but it does not dictate the LCD-first default. Flat is now the out-of-box geometry because it preserves the original game-image composition on a modern flat panel. LCD Focus is an explicitly non-physical alternative for subtle horizontal art direction. Custom is a deliberately simpler, controllable biconic approximation for intermediate/asymmetric CRT contours and curved LCD-style displays. It uses circular principal-axis sections and a smooth coupled corner blend; it does not reproduce the special diagonal contour, planar border or detailed mechanical/glass design of the cited patent, and it is not asserted to be the exact surface of a particular CRT.
 
 ### 12.4 Faceplate coverage and corner rounding
 
-`crt_surface_coverage()` uses a signed-distance rounded rectangle. Coordinates are expressed in units based on the shorter output dimension. The fixed internal `screen_corner_radius = 0.02` (hidden from the UI) sets the corner fraction; the signed distance is antialiased using a width based on the shorter output dimension. Flat mode returns full coverage, so this value has no effect in Flat mode. Coverage is multiplied into the final composite after grain/flicker.
+`crt_surface_coverage()` uses a signed-distance boundary in active-viewport-local UV coordinates. For Cylindrical, Spherical and Custom, it is a rounded rectangle; the fixed internal `screen_corner_radius = 0.02` (hidden from the UI) sets its corner fraction. For LCD Focus, the radius is forced to zero, so coverage follows a square viewport boundary and does not add rounded corners. Its aspect ratio and antialiasing width are based on `ViewportSize` (or the full output size in the host-uniform fallback), not the full swapchain when the active image occupies only part of it. The signed distance is antialiased using a width based on the shorter viewport dimension, so coverage fades through a narrow band outside the active rectangle rather than switching instantaneously. Flat mode returns full coverage because it does not use the geometry-domain mask. Coverage is multiplied into the final composite after grain/flicker.
 
 ### 12.5 Derivative-driven geometry reconstruction
 
-For curved modes with adaptive reconstruction selected, `sample_crt_surface()` estimates the projected source-pixel footprint from `ddx(centre_uv)` and `ddy(centre_uv)`, scaled by texture size. It forms a 2×2 Jacobian metric `JᵀJ`, finds the major eigenvalue/eigenvector and samples along the principal/minification direction.
+For LCD Focus or curved modes with adaptive reconstruction selected, `sample_crt_surface()` estimates the mapped source-pixel footprint from `ddx(centre_uv)` and `ddy(centre_uv)`, scaled by texture size. It forms a 2×2 Jacobian metric `JᵀJ`, finds the major eigenvalue/eigenvector and samples along the principal/minification direction.
 
 - **Bilinear (1 tap)** is the saved default and takes one ordinary linear texture sample.
 - **Adaptive up to 4 taps** increases the line sample count according to the major footprint length and caps it at 4.
 - **Adaptive up to 8 taps** uses the same method with an 8-tap cap.
 
-The selected samples are weighted by rounded-faceplate coverage. RGB and `tCrtScene.a` scanline metadata use the same coverage weights. This is bounded one-dimensional anisotropic line reconstruction, not full two-dimensional EWA. The minor axis relies on the sampler's linear filtering and is not fully integrated; strong curvature or extreme minification can still show aliasing/blur trade-offs.
+The selected samples are weighted by geometry coverage (square viewport coverage for LCD Focus; rounded-faceplate coverage for the curved profiles). RGB and `tCrtScene.a` scanline metadata use the same coverage weights. This is bounded one-dimensional anisotropic line reconstruction, not full two-dimensional EWA. The minor axis relies on the sampler's linear filtering and is not fully integrated; strong curvature or extreme minification can still show aliasing/blur trade-offs.
 
 ### 12.6 Pipeline integration
 
-The mask, scanlines, display profile and vignette are rendered into `tCrtScene` before projection. Final composite projects and samples this completed scene; halation and bloom use the same faceplate UV. The phosphor structure therefore curves together with the image. Output-grid grain is an intentional exception and remains anchored to final output pixels; native/mixed grain follows mapped source coordinates.
+The mask, scanlines, display profile and vignette are rendered into `tCrtScene` before geometry mapping. Final composite samples this completed scene through the selected mapping; halation and bloom use the same mapped UV. The phosphor structure therefore moves together with the image. Output-grid grain is an intentional exception and remains anchored to final output pixels; native/mixed grain follows mapped source coordinates.
 
 ## 13. Coordinate-space map
 
@@ -929,7 +979,8 @@ The shader uses several UV and pixel domains. Changing one transform without che
 | `uv` | Y-inverted coordinate derived from `uv_tx` in scene/composite code. | Retained NewPixie mapping. |
 | `screen_uv` | Fitted image coordinate blended with the direct output coordinate. | Scene positioning, vignette and animation phase. |
 | `scuv` | Compensated source coordinate after fit and `Edge Zoom`. | Main source-image mapping. |
-| `geometry_uv` | Faceplate projection of final output UV; equals output UV in Flat mode. | Sampling CRT scene, halation and bloom. |
+| `geometry_uv` | Selected geometry mapping returned to full output-texture UV; equals output UV in Flat mode. | Sampling CRT scene, halation and bloom. |
+| `geometry_surface_uv` | Geometry-mapped UV normalized to the active viewport; source-coordinate UV for LCD Focus and hit UV for virtual faceplates. | Square/rounded geometry coverage and viewport-relative diagnostics. |
 | `source_uv` | Back-mapped source coordinate associated with the projected scene sample. | Native/mixed grain and source-detail metadata. |
 | `pixel` | UV multiplied by output-buffer dimensions. | Phosphor mask and footprint calculations. |
 | `native_position` | Source UV divided by native source-pixel UV dimensions. | Native-aligned grain. |
@@ -994,16 +1045,17 @@ This category appears immediately below Source Image Filtering in the UI.
 
 | Variable | Default | Range / items | Purpose |
 |---|---:|---|---|
-| `screen_geometry` | Flat (`0`) | Flat / Cylindrical / Spherical / Aspherical | Selects virtual faceplate shape. |
-| `surface_radius` | `8.0` | `2–40`, `0.1` | Horizontal/overall radius for Cylindrical and Spherical profiles. |
-| `surface_radius_horizontal` | `6.0` (hidden) | `2–40`, `0.1` | Fixed Aspherical horizontal base radius; retained internally, not user-editable in the UI. |
-| `surface_radius_vertical` | `12.0` (hidden) | `2–40`, `0.1` | Fixed Aspherical vertical base radius; retained internally, not user-editable in the UI. |
-| `surface_aspheric_departure` | `0.015` (hidden) | `-0.12–0.12`, `0.001` | Fixed fourth-order edge-depth departure; retained internally, not user-editable in the UI. |
+| `screen_geometry` | Flat (`0`) | Flat / Cylindrical / Spherical / Custom / LCD Focus | Selects the geometry treatment; numeric IDs for the original four choices are preserved. |
+| `lcd_focus_strength` | `0.02` | `0–0.05`, `0.001` | LCD Focus only; normalized horizontal center-expansion strength. |
+| `surface_radius` | `8.0` | `2–40`, `0.1` | Actual shared radius for Cylindrical and Spherical. |
+| `custom_curvature_horizontal` | `8.97` | `0–100`, `0.01` | Nonlinear Custom horizontal curvature level; `c = 0.5 * (level/100)^2`. |
+| `custom_curvature_vertical` | `8.97` | `0–100`, `0.01` | Nonlinear Custom vertical curvature level; equal default to horizontal. |
+| `custom_surface_curvature_help` | `0` (display-only) | — | UI legend explaining the Custom-only curvature controls. |
 | `camera_distance` | `4.0` | `2–20`, `0.1` | Virtual camera distance. |
 | `camera_horizontal_offset` | `0.0` | `-0.5–0.5`, `0.005` | Virtual camera horizontal offset. |
 | `camera_vertical_offset` | `0.0` | `-0.5–0.5`, `0.005` | Virtual camera vertical offset. |
-| `screen_corner_radius` | `0.02` (hidden) | `0–0.08`, `0.001` | Fixed rounded-faceplate corner fraction of the shorter image dimension; active only for curved profiles. Retained internally, not user-editable in the UI. |
-| `geometry_antialiasing` | Bilinear (1 tap, `0`) | Bilinear / Adaptive up to 4 / Adaptive up to 8 | Geometry-only reconstruction mode; Flat uses one sample regardless. |
+| `screen_corner_radius` | `0.02` (hidden) | `0–0.08`, `0.001` | Fixed rounded-faceplate corner fraction of the shorter image dimension; active only for Cylindrical, Spherical and Custom. Retained internally, not user-editable in the UI. |
+| `geometry_antialiasing` | Bilinear (1 tap, `0`) | Bilinear / Adaptive up to 4 / Adaptive up to 8 | Reconstruction for LCD Focus and virtual faceplate profiles; Flat uses one sample regardless. |
 
 ### 14.6 Scanlines & Beam
 
@@ -1145,7 +1197,7 @@ The UI-only text uniforms `phosphor_mask_settings_help`, `aperture_grille_group_
 15. **Halation Horizontal Blur (×4)** — horizontal halation intermediate.
 16. **Halation Blur (×4)** — completed vertical halation blur.
 17. **Vignette Falloff** — the selected Legacy Fit or Symmetric Viewport vignette multiplier.
-18. **CRT Surface Coverage** — projected faceplate coverage/edge mask.
+18. **Geometry Coverage** — active viewport edge coverage; rounded faceplate coverage for the virtual CRT profiles.
 19. **Phosphor Mask + Damping Wires** — selected mask combined with effective aperture-grille damping-wire transmission.
 20. **CRT Scene (Linear, Pre-Glow)** — linear CRT scene before halation and bloom compositing.
 
@@ -1257,7 +1309,7 @@ The routes below describe different valid directions the shader can take. They a
 
 This route is appropriate when the user specifically wants the existing restrained style or asks for small tuning changes.
 
-- The current baseline is Flat geometry and Sony Trinitron Japanese Cool as the default display profile.
+- The current baseline is Flat geometry and Sony Trinitron Japanese Cool as the default display profile; LCD Focus and the CRT faceplate profiles are optional alternatives.
 - Possible adjustments include mask strength, scanline strength, Pixel Smoothing, horizontal/vertical source smoothing, vignette, bloom, ghosting, noise and halation.
 - Changing one subsystem at a time makes visual comparisons easier, but multiple coordinated changes are valid when requested.
 - Avoid changing unrelated controls when performing a narrowly scoped fix.
@@ -1336,7 +1388,7 @@ Potential options:
 - explicit mapping tests for portrait/wide aspect and off-axis cameras;
 - more realistic profile shapes if supported by references.
 
-The current default is Flat, but curvature may remain optional or become central to a different requested look. Do not call the current major-axis line filter full EWA.
+Flat is the current default LCD geometry. LCD Focus is an optional, mild horizontal composition remap; Cylindrical/Spherical/Custom remain physically motivated or art-directed faceplate alternatives. Do not call the current major-axis line filter full EWA.
 
 ### Route J — Temporal/physical CRT research
 
@@ -1383,7 +1435,7 @@ For every meaningful shader change:
 2. **Static inspection:** Check declarations, types, function dependencies, coordinate conventions, pass ordering, target reads/writes, alpha semantics, debug branches and UI wiring.
 3. **Mathematical checks:** Compare new filters/geometry with a CPU or high-precision reference where practical. Test endpoints and transition regions, not just defaults.
 4. **Compile:** Use the actual ReShade FX compiler/toolchain used by DuckStation. Record backend, shader model and compiler output. General HLSL validity is not a substitute.
-5. **Runtime test:** Run in DuckStation. At minimum test the default Sony profile/Flat geometry, every mask, Neutral — Standard, scanlines on/off, both vertical beam models, both attenuation stages, grain headroom on/off, halation/bloom and a curved profile if geometry changed.
+5. **Runtime test:** Run in DuckStation. At minimum test the default Sony profile/Flat geometry, LCD Focus at zero/default/maximum strength, Cylindrical and Spherical profiles, Custom with equal curvature levels, unequal curvature levels and zero curvature on one axis, every mask, Neutral — Standard, scanlines on/off, both vertical beam models, both attenuation stages, grain headroom on/off, halation/bloom and each geometry profile if geometry changed.
 6. **Resolution test:** Compare at 1080p and 4K when relevant, plus at least one lower output resolution if mask pitch or sampling changed. Test native and enhanced internal resolution.
 7. **Temporal test:** Record multiple frames for rolling phase, alternating phase, Field-Phase Flicker, grain animation, persistence and moving content.
 8. **Diagnostic test:** Exercise all Debug View indices 0–20 and ensure Off restores the normal pipeline. Check that diagnostic-only forced work is isolated from ordinary rendering.
@@ -1395,7 +1447,16 @@ For every meaningful shader change:
 
 | Test | What it verifies |
 |---|---|
-| Flat default Sony profile, SotN gameplay | Preferred default image character. |
+| Flat default Sony profile, SotN gameplay | Clean LCD geometry reference and current default appearance. |
+| LCD Focus at `0`, `0.02` and `0.05`, SotN gameplay | Identity endpoint, subtle central expansion, maximum effect, interface/edge distortion and fixed-boundary behaviour. |
+| Cylindrical profile, SotN gameplay | Optional CRT-inspired horizontal faceplate look compared with Flat and LCD Focus. |
+| Custom with equal nonzero curvature levels | Exact agreement with the Spherical sag/gradient model. |
+| Custom with unequal curvature levels | Independent horizontal/vertical curvature and stable projection. |
+| Custom with vertical curvature zero | Exact horizontal-cylinder limit, with no vertical-extent clamp. |
+| Custom with horizontal curvature zero | Exact vertical-cylinder limit, with no horizontal-extent clamp. |
+| Curved viewport inside wider/taller output | Projection aspect, edge coverage and scene sampling follow `ViewportOffset` / `ViewportSize`, not the swapchain. |
+| Pixels outside active viewport | No geometry remapping; coverage fades to zero across the antialiased viewport boundary. |
+| Minimum-radius safety bound | No invalid surface-domain hits at short camera distances, portrait aspect ratios or camera offsets. |
 | Same scene, shader disabled | Baseline for what the shader changes. |
 | Neutral — Standard | Bypasses display-profile transform only; Aperture Grille remains the automatic mask. |
 | Sony Japanese Cool vs Balanced Color | Preferred cool white character versus D65 P22 interpretation. |
@@ -1462,7 +1523,7 @@ Line numbers move. Use function names and this map; verify the current source be
 | `PS_BloomBlurHorizontal/Vertical()` | Quarter-resolution bloom Gaussian blur and zero-intensity early-outs. |
 | `crt_surface_sag_gradient()` | Geometry-profile surface sag and analytic gradient. |
 | `project_crt_surface()` | Virtual-camera ray/height-field intersection. |
-| `crt_surface_coverage()` | Rounded faceplate boundary and anti-aliasing. |
+| `crt_surface_coverage()` | Square LCD Focus or rounded virtual-faceplate boundary coverage with antialiasing. |
 | `sample_crt_surface()` | Bilinear or bounded major-axis reconstruction with coverage/scanline metadata. |
 | `apply_selective_warm_desaturation()` | Locked warm-hue trim after tone mapping. |
 | `PS_CompositeBloom()` | Diagnostic dispatch, projection, halation, bloom, tone mapping, grain, flicker and SDR output. |
@@ -1490,6 +1551,6 @@ The display profiles, masks, beam reconstruction, source filtering, grain protec
 
 The simplest accurate description is:
 
-> CRT-Trinity is a highly user-configurable Sony Trinitron-inspired CRT post-processing ReShade FX shader for DuckStation, built on Mattias Gustavsson's NewPixie CRT. The entire rendering approach is guided by selected characteristics of the Sony Trinitron aperture-grille CRT family, with a cool Japanese P22-inspired default, while the saved values also express the author's personal visual preference. The current setup uses Subpixel Blend source reconstruction, Gaussian Beam scanlines, a Gaussian Single Lobe spot, Shared Beam, a Symmetric Viewport vignette, enabled-by-default Headroom-Aware Grain, Flat geometry and an Aperture Grille mask. The hidden Sine, Super-Gaussian, Lorentzian and Core + Tail implementations remain available internally. Other display profiles provide color/white-point and automatic-mask alternatives rather than separate complete television simulations. Grain, ghosting, bloom, flicker and other finishing effects are aesthetic choices where appropriate, not claims about the physical behaviour of every CRT. The shader is a screen-space post-process, not a physically complete CRT or analog-video simulation.
+> CRT-Trinity is a highly user-configurable Sony Trinitron-inspired CRT post-processing ReShade FX shader for DuckStation, built on Mattias Gustavsson's NewPixie CRT. The entire rendering approach is guided by selected characteristics of the Sony Trinitron aperture-grille CRT family, with a cool Japanese P22-inspired default, while the saved values also express the author's personal visual preference. The current setup uses Subpixel Blend source reconstruction, Gaussian Beam scanlines, a Gaussian Single Lobe spot, Shared Beam, a Symmetric Viewport vignette, enabled-by-default Headroom-Aware Grain, Flat geometry (with LCD Focus and the CRT faceplate profiles available as alternatives) and an Aperture Grille mask. The hidden Sine, Super-Gaussian, Lorentzian and Core + Tail implementations remain available internally. Other display profiles provide color/white-point and automatic-mask alternatives rather than separate complete television simulations. Grain, ghosting, bloom, flicker and other finishing effects are aesthetic choices where appropriate, not claims about the physical behaviour of every CRT. The shader is a screen-space post-process, not a physically complete CRT or analog-video simulation.
 
 Treat this document as the technical handoff to future AI assistants and developers. It explains what the shader currently computes, what its approximations mean, which data contracts its passes rely on, where controls take effect, what the diagnostics show and what it does not attempt to simulate. The exact `CRT-Trinity.fx` source remains authoritative. The shader is one unified implementation and should not be documented as a changelog or a collection of version-specific feature batches.
